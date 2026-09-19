@@ -1,0 +1,149 @@
+# ==========================================
+# 1. Python Core & Byte-compiled Files
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ==========================================
+# 2. Virtual Environments & Packages
+# ==========================================
+.venv/
+venv/
+ENV/
+env/
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# ==========================================
+# 3. IDEs and Code Editors
+# ==========================================
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+*.code-workspace
+.idea/
+.ipynb_checkpoints
+
+# ==========================================
+# 4. Environment Variables & Secrets (CRITICAL)
+# ==========================================
+.env
+.env.local
+.env.*
+*.env
+secrets.json
+*.pem
+*.key
+
+# ==========================================
+# 5. Testing, Linting, & Code Coverage
+# ==========================================
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# ==========================================
+# 6. Database & Local Storage Caches
+# ==========================================
+*.db
+*.sqlite3
+instance/
+*.log
+temp/
+supabase/.temp/*
+
+# ==========================================
+# 7. OS Generated / Temp Files
+# ==========================================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.AppleDouble
+.LSOverride
+*~
+.fuse_hidden*
+.directory
+
+# ==========================================
+# 8. Agentic & Coding Assistant Overrides
+# ==========================================
+.agent*
+.claude
+.codebuddy
+.codex
+.continue
+.cursor
+.gemini
+.kris
+.mem
+.aider
+.aiderignore
+.cursorignore
+.trae
+.opencode
+.qoder
+.roo
+.windsurf
+.kiro
+
+# ==========================================
+# 9. Legacy / Deprecated Directories
+# ==========================================
+client/
+
+# ==========================================
+# 10. Flutter & Mobile Client (spliqo_client)
+# ==========================================
+spliqo_client/.dart_tool/
+spliqo_client/.flutter-plugins
+spliqo_client/.flutter-plugins-dependencies
+spliqo_client/.packages
+spliqo_client/.pub-cache/
+spliqo_client/.pub/
+spliqo_client/build/
+spliqo_client/pubspec.lock
+spliqo_client/*.iml
+spliqo_client/scratch/
+
+# Core Application Configuration & Secrets
+spliqo_client/lib/config/app_secrets.dart
+spliqo_client/**/google-services.json
+spliqo_client/**/GoogleService-Info.plist
+
+# Android Native Tooling & Keystores
+spliqo_client/android/.gradle/
+spliqo_client/android/local.properties
+spliqo_client/android/key.properties
+spliqo_client/.kotlin/
+spliqo_client/android/app/Flutter/Generated.xcconfig
+spliqo_client/android/**/*.jks
+spliqo_client/android/**/*.keystore
+spliqo_client/android/**/*.p12
+
+# iOS Native Tooling Overrides
+spliqo_client/ios/.symlinks/
+spliqo_client/ios/Flutter/App.framework
+spliqo_client/ios/Flutter/Flutter.framework
+spliqo_client/ios/Flutter/Flutter.podspec
+spliqo_client/ios/Flutter/Generated.xcconfig
+spliqo_client/ios/Flutter/flutter_export_environment.sh
+spliqo_client/ios/Flutter/.last_build_id
+spliqo_client/ios/Pods/
+spliqo_client/ios/Runner/GeneratedPluginRegistrant.*
+spliqo_client/ios/DerivedData/
+*.moved-aside
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+

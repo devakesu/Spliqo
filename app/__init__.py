@@ -1,0 +1,2 @@
+"""Spliqo FastAPI Application Package."""
+

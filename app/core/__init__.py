@@ -1,0 +1,2 @@
+"""Spliqo Core Application Module."""
+

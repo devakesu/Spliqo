@@ -1,0 +1,71 @@
+# ruff.toml placed at /workspaces/Spliqo/ruff.toml
+target-version = "py312"
+line-length = 88
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "temp",
+    "mobile",
+    "client",
+    "spliqo_client",
+]
+
+[lint]
+# Select rule sets mirroring strict layout from Nexus
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes (runtime errors)
+    "I",   # isort (clean import structures)
+    "C90", # McCabe Complexity Gate (catches convoluted code blocks)
+    "N",   # PEP8 Naming Conventions (strict casing tracking)
+    "UP",  # Python Upgrade tracking (enforces modern language specs)
+    "YTT", # sys.version misallocations
+    "S",   # Bandit Security Scans (catches SQL Injections, hardcoded keys)
+    "BLE", # Blind Exception Catching (forbids raw `except: pass`)
+    "B",   # Bugbear (design flaws and bad loop pointer allocations)
+    "A",   # Built-in Shadowing protections
+    "COM", # Trailing comma enforcements
+    "T20", # Forbids raw print statements escaping to production
+    "RET", # Return statement structural sanity checks
+    "SIM", # Code simplification pipeline (clean metrics)
+    "ARG", # Unused arguments checks
+    "ERA", # Eradicate (flags commented-out dead code blocks)
+    "RUF", # Specific internal Ruff structural enhancements
+]
+
+[lint.mccabe]
+# Strict complexity limit threshold. Functions with score > 8 will fail validation.
+max-complexity = 8
+
+[lint.per-file-ignores]
+# FastAPI route parameter defaults use Body(), Depends(), Query(), File()
+"app/api/**/*.py" = ["B008"]
+"backend/app/api/**/*.py" = ["B008"]
+"api/**/*.py" = ["B008"]
+
+# Test files: `assert` is standard pytest idiom, non-crypto RNG for synthetic fixtures
+"tests/**/*.py" = [
+    "S101",
+    "S105",
+    "S106",
+    "S311",
+    "E501",
+    "ARG001",
+    "RUF001",
+    "RUF043",
+    "B010",
+    "B017",
+    "SIM117",
+    "ERA001",
+    "F402",
+    "N806",
+    "E402",
+]
+
+# Command-line utility scripts print output and invoke subprocess
+"scripts/**/*.py" = ["T201", "S603", "E501", "C901", "BLE001"]
+"app/**/*.py" = ["E501"]
+"backend/**/*.py" = ["E501"]
+

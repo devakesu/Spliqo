@@ -1,0 +1,123 @@
+{
+  "name": "Spliqo Development",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "..",
+    "options": ["-t", "spliqo-dev:latest"]
+  },
+  "workspaceFolder": "/workspaces/Spliqo",
+  "remoteUser": "vscode",
+
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "version": "latest",
+      "enableNonRootDocker": "true",
+      "moby": false
+    }
+  },
+
+  "mounts": [
+    "source=devhub-pub-cache,target=/home/vscode/.pub-cache,type=volume",
+    "source=devhub-gradle-cache,target=/home/vscode/.gradle,type=volume",
+    "source=devhub-npm-cache,target=/home/vscode/.npm,type=volume",
+    "source=devhub-pip-cache,target=/home/vscode/.cache,type=volume",
+    "target=/workspaces/Spliqo/spliqo_client/.dart_tool,type=volume",
+    "target=/workspaces/Spliqo/spliqo_client/build,type=volume"
+  ],
+
+  "forwardPorts": [8000, 8181],
+  "portsAttributes": {
+    "8000": {
+      "label": "FastAPI Backend",
+      "onAutoForward": "notify"
+    },
+    "8181": {
+      "label": "Dart DevTools",
+      "onAutoForward": "silent"
+    }
+  },
+
+  "containerEnv": {
+    "ADB_SERVER_SOCKET": "tcp:host.docker.internal:5037",
+    "SUPABASE_SERVICES_HOSTNAME": "host.docker.internal",
+    "PYTHONUNBUFFERED": "1",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+
+  "runArgs": [
+    "--name=Spliqo_Sandbox",
+    "--add-host=host.docker.internal:host-gateway",
+    "--ipc=host",
+    "--restart=unless-stopped"
+  ],
+
+  "postCreateCommand": "touch ~/.sudo_as_admin_successful ~/.hushlogin 2>/dev/null || true; for gid in $(id -G); do if ! getent group $gid >/dev/null 2>&1; then sudo groupadd -g $gid host-group-$gid 2>/dev/null || true; fi; done; if [ -f /workspaces/Spliqo/.devcontainer/init_workspace.sh ]; then bash /workspaces/Spliqo/.devcontainer/init_workspace.sh; else bash /home/vscode/init_workspace.sh; fi",
+  "postStartCommand": "/usr/local/bin/supabase-proxy start",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-pyright.pyright",
+        "ms-python.debugpy",
+        "charliermarsh.ruff",
+        "Dart-Code.flutter",
+        "Dart-Code.dart-code",
+        "cweijan.vscode-database-client2",
+        "esbenp.prettier-vscode",
+        "formulahendry.auto-rename-tag",
+        "christian-kohler.path-intellisense",
+        "davidanson.vscode-markdownlint",
+        "oderwat.indent-rainbow",
+        "usernamehw.errorlens",
+        "google.google-antigravity",
+        "vscjava.vscode-gradle"
+      ],
+      "settings": {
+        "remote.forwardAgent": true,
+        "python.defaultInterpreterPath": "/workspaces/Spliqo/.venv/bin/python",
+        "python.analysis.diagnosticMode": "workspace",
+        "python.analysis.typeCheckingMode": "strict",
+        "python.analysis.inlayHints.variableTypes": true,
+        "python.analysis.inlayHints.functionReturnTypes": true,
+        "python.analysis.diagnosticSeverityOverrides": {
+          "reportMissingTypeStubs": "none",
+          "reportUnknownMemberType": "none",
+          "reportUnknownVariableType": "none",
+          "reportUnknownArgumentType": "none",
+          "reportUnknownReturnType": "none",
+          "reportUnusedImport": "error",
+          "reportUnusedVariable": "error",
+          "reportDuplicateImport": "error",
+          "reportPrivateUsage": "none"
+        },
+        "ruff.enable": true,
+        "ruff.organizeImports": true,
+        "ruff.fixAll": true,
+        "dart.flutterSdkPath": "/opt/flutter",
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "[python]": {
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+          }
+        },
+        "[dart]": {
+          "editor.defaultFormatter": "Dart-Code.dart-code",
+          "editor.formatOnSave": true
+        },
+        "[json]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[jsonc]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[markdown]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        }
+      }
+    }
+  }
+}

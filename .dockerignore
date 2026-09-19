@@ -1,0 +1,48 @@
+# Git & Repository metadata
+.git
+.gitignore
+.gitmodules
+
+# Virtual environments
+.venv
+venv
+
+# Local build & caching
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.ruff_cache
+
+# Tests, Mobile Client & Supabase
+tests
+spliqo_client
+client
+supabase
+.env.test
+
+# Documentation & Tooling configs
+README.md
+LICENSE
+.agents
+.agent*
+.vscode
+.gemini
+.claude
+.codebuddy
+.codex
+.continue
+.cursor
+.devcontainer
+.impeccable
+.kiro
+.opencode
+.qoder
+.roo
+.trae
+.windsurf
+pyrightconfig.json
+pytest.ini
+ruff.toml
+
