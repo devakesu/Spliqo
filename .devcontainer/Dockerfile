@@ -87,7 +87,7 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/
 # Install Global CLI tools via npm
 RUN npm install -g firebase-tools @infisical/cli ui-ux-pro-max-cli
 
-# Install Sentry CLI, docker-mcp CLI plugin & Redis MCP server via uv
+# Install Sentry CLI, docker-mcp CLI plugin, Redis MCP server & pip-tools via uv
 RUN ARCH="${TARGETARCH:-$(dpkg --print-architecture)}" \
     && case "${ARCH}" in \
       amd64) DOCKER_MCP_ARCH="linux-amd64";; \
@@ -98,7 +98,8 @@ RUN ARCH="${TARGETARCH:-$(dpkg --print-architecture)}" \
     && curl -fsSL "https://github.com/docker/mcp-gateway/releases/download/v${DOCKER_MCP_VERSION}/docker-mcp-${DOCKER_MCP_ARCH}.tar.gz" | tar -xz -C /usr/libexec/docker/cli-plugins \
     && chmod 755 /usr/libexec/docker/cli-plugins/docker-mcp \
     && curl -fsSL https://cli.sentry.dev/install | bash \
-    && env UV_TOOL_DIR="/usr/local/share/uv-tools" UV_TOOL_BIN_DIR="/usr/local/bin" uv tool install --force redis-mcp-server
+    && env UV_TOOL_DIR="/usr/local/share/uv-tools" UV_TOOL_BIN_DIR="/usr/local/bin" uv tool install --force redis-mcp-server \
+    && env UV_TOOL_DIR="/usr/local/share/uv-tools" UV_TOOL_BIN_DIR="/usr/local/bin" uv tool install --force pip-tools
 
 # ==============================================================================
 # 2. Multi-Arch Precompiled Binaries: Supabase CLI & GitHub MCP Server

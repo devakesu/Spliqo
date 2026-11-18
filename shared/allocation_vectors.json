@@ -1,0 +1,142 @@
+{
+  "vectors": [
+    {
+      "name": "shared_item_three_way_with_tax",
+      "description": "Golden vector from STANDARDS.md Appendix B: one item shared by three participants with net tax.",
+      "items": {
+        "i1": 10000
+      },
+      "claims": {
+        "i1": ["a", "b", "c"]
+      },
+      "participants": ["a", "b", "c"],
+      "subtotal_paise": 10000,
+      "total_paise": 10500,
+      "expected_final": {
+        "a": 3501,
+        "b": 3500,
+        "c": 3499
+      }
+    },
+    {
+      "name": "single_participant_no_adjustment",
+      "description": "A single participant claims all items with zero adjustment.",
+      "items": {
+        "item_1": 5000,
+        "item_2": 2500
+      },
+      "claims": {
+        "item_1": ["user1"],
+        "item_2": ["user1"]
+      },
+      "participants": ["user1"],
+      "subtotal_paise": 7500,
+      "total_paise": 7500,
+      "expected_final": {
+        "user1": 7500
+      }
+    },
+    {
+      "name": "multiple_items_with_discount_and_unclaimed_participant",
+      "description": "Two items, net discount (negative adjustment), one participant claims nothing.",
+      "items": {
+        "pizza": 60000,
+        "salad": 20000
+      },
+      "claims": {
+        "pizza": ["alice", "bob"],
+        "salad": ["alice"]
+      },
+      "participants": ["alice", "bob", "carol"],
+      "subtotal_paise": 80000,
+      "total_paise": 72000,
+      "expected_final": {
+        "alice": 45000,
+        "bob": 27000,
+        "carol": 0
+      }
+    },
+    {
+      "name": "deterministic_uuid_tie_break_with_remainders",
+      "description": "Multi-item split and adjustment split with remainders and deterministic tie-breaking on UUIDs.",
+      "items": {
+        "item_1": 100,
+        "item_2": 100
+      },
+      "claims": {
+        "item_1": [
+          "00000000-0000-0000-0000-000000000001",
+          "00000000-0000-0000-0000-000000000002",
+          "00000000-0000-0000-0000-000000000003"
+        ],
+        "item_2": [
+          "00000000-0000-0000-0000-000000000002",
+          "00000000-0000-0000-0000-000000000003",
+          "00000000-0000-0000-0000-000000000004"
+        ]
+      },
+      "participants": [
+        "00000000-0000-0000-0000-000000000001",
+        "00000000-0000-0000-0000-000000000002",
+        "00000000-0000-0000-0000-000000000003",
+        "00000000-0000-0000-0000-000000000004"
+      ],
+      "subtotal_paise": 200,
+      "total_paise": 205,
+      "expected_final": {
+        "00000000-0000-0000-0000-000000000001": 35,
+        "00000000-0000-0000-0000-000000000002": 69,
+        "00000000-0000-0000-0000-000000000003": 67,
+        "00000000-0000-0000-0000-000000000004": 34
+      }
+    },
+    {
+      "name": "cap_sized_receipt_total",
+      "description": "Maximum receipt total cap (10,000,000 paise / 1 Lakh INR) divided among 3 participants.",
+      "items": {
+        "item_large": 9500000
+      },
+      "claims": {
+        "item_large": ["p1", "p2", "p3"]
+      },
+      "participants": ["p1", "p2", "p3"],
+      "subtotal_paise": 9500000,
+      "total_paise": 10000000,
+      "expected_final": {
+        "p1": 3333334,
+        "p2": 3333334,
+        "p3": 3333332
+      }
+    }
+  ],
+  "estimates": [
+    {
+      "name": "estimate_golden_vector_a",
+      "items_paise": 3334,
+      "subtotal_paise": 10000,
+      "total_paise": 10500,
+      "expected_estimate": 3501
+    },
+    {
+      "name": "estimate_golden_vector_b",
+      "items_paise": 3333,
+      "subtotal_paise": 10000,
+      "total_paise": 10500,
+      "expected_estimate": 3500
+    },
+    {
+      "name": "estimate_zero_items",
+      "items_paise": 0,
+      "subtotal_paise": 10000,
+      "total_paise": 10500,
+      "expected_estimate": 0
+    },
+    {
+      "name": "estimate_with_discount",
+      "items_paise": 50000,
+      "subtotal_paise": 80000,
+      "total_paise": 72000,
+      "expected_estimate": 45000
+    }
+  ]
+}

@@ -145,6 +145,18 @@ elif [ -f "$TARGET_DIR/pyproject.toml" ] && command -v uv >/dev/null 2>&1; then
     VIRTUAL_ENV="$VENV_DIR" uv pip install -e "$TARGET_DIR" 2>/dev/null || true
 fi
 
+# Ensure pip-tools is installed in the virtual environment and system toolchain
+if [ -x "$VENV_DIR/bin/pip" ]; then
+    if command -v uv >/dev/null 2>&1; then
+        VIRTUAL_ENV="$VENV_DIR" uv pip install pip-tools >/dev/null 2>&1 || true
+    else
+        "$VENV_DIR/bin/pip" install pip-tools >/dev/null 2>&1 || true
+    fi
+fi
+if ! command -v pip-compile >/dev/null 2>&1 && command -v uv >/dev/null 2>&1; then
+    sudo env UV_TOOL_DIR="/usr/local/share/uv-tools" UV_TOOL_BIN_DIR="/usr/local/bin" uv tool install --force pip-tools >/dev/null 2>&1 || true
+fi
+
 BASHRC="/home/vscode/.bashrc"
 if ! grep -qF "$VENV_DIR/bin/activate" "$BASHRC" 2>/dev/null; then
     echo "" >> "$BASHRC"

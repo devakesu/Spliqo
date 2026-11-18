@@ -1,7 +1,7 @@
 /// Application configuration loaded from compile-time environment variables
 /// injected via `--dart-define` (e.g. through Infisical).
 class AppConfig {
-  const AppConfig({
+  const new({
     required this.appName,
     required this.appVersion,
     required this.appDomain,

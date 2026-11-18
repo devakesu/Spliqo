@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
@@ -16,6 +17,12 @@ from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app.api.v1 import api_v1_router
 from app.core.config import settings
+from app.core.database import close_db_pool, init_db_pool
+from app.core.errors import (
+    SpliqoBaseError,
+    spliqo_exception_handler,
+    validation_exception_handler,
+)
 from app.core.infra.correlation import CorrelationIdFilter, CorrelationIdMiddleware
 from app.core.infra.limiter import limiter
 from app.core.security.security import (
@@ -37,7 +44,12 @@ for _handler in _root_logger.handlers:
 async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
     """Manage application startup and shutdown lifecycle events."""
     logger.info("Spliqo application starting up (Environment: %s)", settings.environment)
+    try:
+        await init_db_pool()
+    except (OSError, RuntimeError) as e:
+        logger.warning("Database pool initialization deferred or failed: %s", e)
     yield
+    await close_db_pool()
     logger.info("Spliqo application shutting down gracefully")
 
 
@@ -110,8 +122,11 @@ def custom_rate_limit_handler(request: Request, exc: Exception) -> Response:
 
 
 app.add_exception_handler(RateLimitExceeded, custom_rate_limit_handler)  # type: ignore[arg-type]
+app.add_exception_handler(SpliqoBaseError, spliqo_exception_handler)  # type: ignore[arg-type]
+app.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore[arg-type]
 
 # Mount API Routers
+app.include_router(api_v1_router, prefix="/v1")
 app.include_router(api_v1_router, prefix="/api/v1")
 
 

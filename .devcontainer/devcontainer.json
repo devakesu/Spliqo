@@ -60,7 +60,6 @@
     "vscode": {
       "extensions": [
         "ms-python.python",
-        "ms-pyright.pyright",
         "ms-python.debugpy",
         "charliermarsh.ruff",
         "tamasfe.even-better-toml",

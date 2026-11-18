@@ -1,0 +1,17 @@
+{
+  "max_participants_per_session": 30,
+  "max_items_per_session": 200,
+  "min_item_name_length": 1,
+  "max_item_name_length": 80,
+  "min_display_name_length": 1,
+  "max_display_name_length": 40,
+  "min_session_title_length": 1,
+  "max_session_title_length": 80,
+  "min_item_price_paise": 1,
+  "max_item_price_paise": 10000000,
+  "min_receipt_total_paise": 1,
+  "max_receipt_total_paise": 10000000,
+  "max_receipt_image_bytes": 8388608,
+  "allowed_image_formats": ["jpeg", "jpg", "png", "webp", "heic"],
+  "session_lifetime_days": 30
+}

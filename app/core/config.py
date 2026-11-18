@@ -6,6 +6,7 @@ configuration loaded dynamically from Infisical or environment variables.
 
 from typing import Any
 
+from pydantic import field_validator
 from pydantic.fields import FieldInfo
 from pydantic_settings import (
     BaseSettings,
@@ -21,6 +22,9 @@ BLOCKED_DOTENV_KEYS: set[str] = {
     "redis_url",
     "admin_api_key",
     "hmac_signing_key",
+    "database_url",
+    "fle_key_hex",
+    "fle_blind_index_key_hex",
 }
 
 
@@ -40,6 +44,17 @@ class Settings(BaseSettings):
     debug: bool = True
     backend_url: str | None = None
 
+    @field_validator("debug", mode="before")
+    @classmethod
+    def parse_debug(cls, v: Any) -> bool:
+        """Parse boolean debug flag permissively for container environments."""
+        if isinstance(v, str):
+            if v.lower() in ("release", "prod", "production", "false", "0", "no"):
+                return False
+            if v.lower() in ("debug", "dev", "development", "true", "1", "yes"):
+                return True
+        return bool(v)
+
     # --- Networking & CORS ---
     allowed_origins: str = (
         "http://localhost:3000,http://localhost:8080,http://127.0.0.1:8000"
@@ -52,15 +67,36 @@ class Settings(BaseSettings):
     rate_limit_health: str = "60/minute"
     redis_url: str | None = None
 
+    # --- Database Settings ---
+    database_url: str = "postgresql://postgres:postgres@172.19.0.2:5432/postgres"
+    database_pool_min: int = 2
+    database_pool_max: int = 10
+
     # --- Supabase Integration ---
-    supabase_url: str = ""
+    supabase_url: str = "http://172.19.0.2:54321"
     supabase_anon_key: str = ""
     supabase_service_role_key: str = ""
     supabase_jwt_secret: str = ""
 
-    # --- Security & Administrative Keys ---
+    # --- AI & Vision Services ---
+    gemini_api_key: str | None = None
+    gemini_model_id: str = "gemini-2.0-flash"
+
+    # --- Security & Cryptographic Keys (FLE) ---
     admin_api_key: str | None = None
     hmac_signing_key: str | None = None
+    fle_key_hex: str = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    fle_blind_index_key_hex: str = "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+
+    @property
+    def fle_key(self) -> bytes:
+        """Return the 32-byte binary AES-256-GCM FLE key."""
+        return bytes.fromhex(self.fle_key_hex)
+
+    @property
+    def fle_blind_index_key(self) -> bytes:
+        """Return the 32-byte binary HMAC blind index key."""
+        return bytes.fromhex(self.fle_blind_index_key_hex)
 
     model_config = SettingsConfigDict(
         env_file=".env",
