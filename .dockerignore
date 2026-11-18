@@ -7,7 +7,7 @@
 .venv
 venv
 
-# Local build & caching
+# Local Python build & caching
 __pycache__
 *.pyc
 *.pyo
@@ -34,7 +34,6 @@ LICENSE
 .codex
 .continue
 .cursor
-.devcontainer
 .impeccable
 .kiro
 .opencode
@@ -46,3 +45,8 @@ pyrightconfig.json
 pytest.ini
 ruff.toml
 
+# Devcontainer files (allow companion scripts needed by Dockerfile COPY)
+.devcontainer/*
+!.devcontainer/init_workspace.sh
+!.devcontainer/supabase-proxy.sh
+!.devcontainer/github-mcp-server.sh

@@ -39,9 +39,11 @@
 
   "containerEnv": {
     "ADB_SERVER_SOCKET": "tcp:host.docker.internal:5037",
+    "NODE_OPTIONS": "--max-old-space-size=9216",
     "SUPABASE_SERVICES_HOSTNAME": "host.docker.internal",
     "PYTHONUNBUFFERED": "1",
-    "PYTHONDONTWRITEBYTECODE": "1"
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "UV_LINK_MODE": "copy"
   },
 
   "runArgs": [
@@ -61,6 +63,7 @@
         "ms-pyright.pyright",
         "ms-python.debugpy",
         "charliermarsh.ruff",
+        "tamasfe.even-better-toml",
         "Dart-Code.flutter",
         "Dart-Code.dart-code",
         "cweijan.vscode-database-client2",
@@ -70,8 +73,17 @@
         "davidanson.vscode-markdownlint",
         "oderwat.indent-rainbow",
         "usernamehw.errorlens",
+        "swiftlang.swift-vscode",
+        "meezilla.json",
+        "timonwong.shellcheck",
+        "redhat.vscode-yaml",
+        "vscjava.vscode-gradle",
+        "github.vscode-github-actions",
         "google.google-antigravity",
-        "vscjava.vscode-gradle"
+        "ms-vscode.cmake-tools",
+        "openai.chatgpt",
+        "mkhl.direnv",
+        "Anthropic.claude-code"
       ],
       "settings": {
         "remote.forwardAgent": true,
@@ -98,6 +110,7 @@
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "esbenp.prettier-vscode",
         "[python]": {
+          "editor.defaultFormatter": "ms-python.python",
           "editor.formatOnSave": true,
           "editor.codeActionsOnSave": {
             "source.fixAll": "explicit",
@@ -106,7 +119,11 @@
         },
         "[dart]": {
           "editor.defaultFormatter": "Dart-Code.dart-code",
-          "editor.formatOnSave": true
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+          }
         },
         "[json]": {
           "editor.defaultFormatter": "esbenp.prettier-vscode"
@@ -116,6 +133,12 @@
         },
         "[markdown]": {
           "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[yaml]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[toml]": {
+          "editor.formatOnSave": true
         }
       }
     }

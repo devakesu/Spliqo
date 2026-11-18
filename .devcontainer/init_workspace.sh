@@ -180,6 +180,7 @@ EXTENSIONS=(
   "ms-pyright.pyright"
   "ms-python.debugpy"
   "charliermarsh.ruff"
+  "tamasfe.even-better-toml"
   "Dart-Code.flutter"
   "Dart-Code.dart-code"
   "cweijan.vscode-database-client2"
@@ -189,7 +190,17 @@ EXTENSIONS=(
   "davidanson.vscode-markdownlint"
   "oderwat.indent-rainbow"
   "usernamehw.errorlens"
+  "swiftlang.swift-vscode"
+  "meezilla.json"
+  "timonwong.shellcheck"
+  "redhat.vscode-yaml"
+  "vscjava.vscode-gradle"
+  "github.vscode-github-actions"
   "google.google-antigravity"
+  "ms-vscode.cmake-tools"
+  "openai.chatgpt"
+  "mkhl.direnv"
+  "Anthropic.claude-code"
 )
 
 PRIMARY_CLI=""
@@ -220,10 +231,218 @@ if [ -n "$PRIMARY_CLI" ]; then
     done
 fi
 
-# --- 9. START SUPABASE LOOPBACK PROXY (IF ACTIVE) ---
+# --- 9. UI/UX SKILLS & IMPECCABLE INITIALIZATION ---
+echo "🎨 Initializing UI/UX skills & Impeccable..."
+if ! command -v uipro >/dev/null 2>&1; then
+    sudo npm install -g ui-ux-pro-max-cli >/dev/null 2>&1 || npm install -g ui-ux-pro-max-cli >/dev/null 2>&1 || true
+fi
+
+(
+    cd "$TARGET_DIR"
+    if command -v uipro >/dev/null 2>&1; then
+        uipro init --ai claude >/dev/null 2>&1 || true
+        uipro init --ai cursor >/dev/null 2>&1 || true
+        uipro init --ai antigravity >/dev/null 2>&1 || true
+        uipro init --ai codex >/dev/null 2>&1 || true
+        uipro init --ai gemini >/dev/null 2>&1 || true
+        uipro init --ai opencode >/dev/null 2>&1 || true
+    fi
+
+    npx --yes impeccable install -y 2>/dev/null || true
+)
+
+# --- 10. DIRENV & INFISICAL AUTH SETUP ---
+echo "⚡ Configuring direnv & Infisical auto-auth..."
+if ! grep -q 'direnv hook bash' "$HOME/.bashrc" 2>/dev/null; then
+    cat << 'EOF' >> "$HOME/.bashrc"
+
+# Direnv shell hook & initial environment export
+if command -v direnv >/dev/null 2>&1; then
+    eval "$(direnv hook bash)"
+    eval "$(direnv export bash 2>/dev/null)"
+fi
+EOF
+fi
+
+if ! grep -q 'infisical_auth()' "$HOME/.bashrc" 2>/dev/null; then
+    cat << 'EOF' >> "$HOME/.bashrc"
+
+# Infisical Universal Auth Helper
+infisical_auth() {
+  local client_id="${1:-${INFISICAL_SECRETS_UNIVERSAL_AUTH_CLIENT_ID:-}}"
+  local client_secret="${2:-${INFISICAL_SECRETS_UNIVERSAL_AUTH_CLIENT_SECRET:-}}"
+
+  if [ -z "$client_id" ] || [ -z "$client_secret" ] || \
+     [ "$client_id" = "<YOUR_CLIENT_ID>" ] || [ "$client_secret" = "<YOUR_CLIENT_SECRET>" ]; then
+    return 0
+  fi
+
+  if command -v infisical >/dev/null 2>&1; then
+    local token
+    token=$(infisical login --method=universal-auth \
+      --client-id="$client_id" \
+      --client-secret="$client_secret" \
+      --plain --silent 2>/dev/null)
+    if [ -n "$token" ]; then
+      export INFISICAL_TOKEN="$token"
+      echo "🔐 Infisical authenticated (INFISICAL_TOKEN exported)."
+    fi
+  fi
+}
+EOF
+fi
+
+if [ -f "$TARGET_DIR/.envrc" ]; then
+    echo "  🔓 Authorizing direnv in $TARGET_DIR..."
+    (cd "$TARGET_DIR" && direnv allow .) 2>/dev/null || true
+fi
+
+# --- 11. ADB PORT FORWARD BRIDGE DAEMON ---
+echo "📱 Checking ADB Port Forward Bridge..."
+ADB_BRIDGE_SCRIPT="$TARGET_DIR/scripts/adb_forward_bridge.py"
+if [ ! -f "$ADB_BRIDGE_SCRIPT" ] && [ -f "/workspaces/Spliqo/scripts/adb_forward_bridge.py" ]; then
+    ADB_BRIDGE_SCRIPT="/workspaces/Spliqo/scripts/adb_forward_bridge.py"
+fi
+
+if ! grep -q 'adb_forward_bridge.py' "$HOME/.bashrc" 2>/dev/null; then
+    cat << EOF >> "$HOME/.bashrc"
+
+# Ensure ADB Port Forward Bridge is running for DevContainer Flutter debugging
+if [[ -n "\$ADB_SERVER_SOCKET" ]] && ! pgrep -f "adb_forward_bridge.py" >/dev/null 2>&1; then
+  nohup python3 "$ADB_BRIDGE_SCRIPT" >/tmp/adb_forward_bridge.log 2>&1 &
+fi
+EOF
+fi
+
+if [[ -n "$ADB_SERVER_SOCKET" ]] && [ -f "$ADB_BRIDGE_SCRIPT" ] && ! pgrep -f "adb_forward_bridge.py" >/dev/null 2>&1; then
+    nohup python3 "$ADB_BRIDGE_SCRIPT" >/tmp/adb_forward_bridge.log 2>&1 &
+    echo "  ✅ ADB Port Forward Bridge started in background."
+fi
+
+# --- 12. MCP SERVERS & SKILLS SETUP ---
+echo "🤖 Ensuring MCP servers and AI developer skills are configured..."
+if ! command -v sentry >/dev/null 2>&1; then
+    curl -fsSL https://cli.sentry.dev/install | bash 2>/dev/null || true
+fi
+
+if ! docker mcp --version >/dev/null 2>&1; then
+    ARCH=$(dpkg --print-architecture 2>/dev/null || echo "amd64")
+    case "${ARCH}" in
+      amd64) DOCKER_MCP_ARCH="linux-amd64";;
+      arm64) DOCKER_MCP_ARCH="linux-arm64";;
+      *) DOCKER_MCP_ARCH="linux-amd64";;
+    esac
+    sudo mkdir -p /usr/libexec/docker/cli-plugins 2>/dev/null || true
+    curl -fsSL "https://github.com/docker/mcp-gateway/releases/download/v0.44.3/docker-mcp-${DOCKER_MCP_ARCH}.tar.gz" 2>/dev/null | sudo tar -xz -C /usr/libexec/docker/cli-plugins 2>/dev/null || true
+    sudo chmod 755 /usr/libexec/docker/cli-plugins/docker-mcp 2>/dev/null || true
+fi
+
+# Ensure github-mcp-server launcher with automatic token resolution
+if [ ! -f "/usr/local/bin/github-mcp-server" ] || [ ! -x "/usr/local/bin/github-mcp-server" ]; then
+    sudo tee /usr/local/bin/github-mcp-server > /dev/null << 'EOF'
+#!/usr/bin/env bash
+if [ -z "$GITHUB_PERSONAL_ACCESS_TOKEN" ]; then
+    if [ -n "$GITHUB_TOKEN" ]; then
+        export GITHUB_PERSONAL_ACCESS_TOKEN="$GITHUB_TOKEN"
+    elif [ -n "$GH_TOKEN" ]; then
+        export GITHUB_PERSONAL_ACCESS_TOKEN="$GH_TOKEN"
+    elif command -v gh >/dev/null 2>&1; then
+        GH_TOKEN_VAL=$(gh auth token 2>/dev/null || true)
+        if [ -n "$GH_TOKEN_VAL" ]; then
+            export GITHUB_PERSONAL_ACCESS_TOKEN="$GH_TOKEN_VAL"
+        fi
+    fi
+fi
+if [ -x "/usr/local/bin/github-mcp-server-bin" ]; then
+    exec /usr/local/bin/github-mcp-server-bin "$@"
+elif command -v npx >/dev/null 2>&1; then
+    exec npx -y @modelcontextprotocol/server-github "$@"
+fi
+EOF
+    sudo chmod 755 /usr/local/bin/github-mcp-server 2>/dev/null || true
+fi
+
+mkdir -p "$HOME/.gemini/config" "$HOME/.gemini/antigravity" "$HOME/.config/Claude" "$HOME/.cursor"
+MCP_CONFIG_FILES=(
+    "$HOME/.gemini/config/mcp_config.json"
+    "$HOME/.gemini/antigravity/mcp_config.json"
+    "$HOME/.config/Claude/claude_desktop_config.json"
+    "$HOME/.cursor/mcp.json"
+)
+
+for cfg in "${MCP_CONFIG_FILES[@]}"; do
+    if [ ! -f "$cfg" ]; then
+        echo '{"mcpServers":{}}' > "$cfg"
+    fi
+    python3 -c '
+import json, sys
+cfg_path = sys.argv[1]
+try:
+    with open(cfg_path, "r") as f:
+        data = json.load(f)
+except Exception:
+    data = {}
+servers = data.setdefault("mcpServers", {})
+if "dart" not in servers:
+    servers["dart"] = {
+        "command": "dart",
+        "args": ["mcp-server"]
+    }
+if "github" not in servers:
+    servers["github"] = {
+        "command": "github-mcp-server",
+        "args": ["stdio"]
+    }
+if "MCP_DOCKER" not in servers:
+    servers["MCP_DOCKER"] = {
+        "command": "docker",
+        "args": ["mcp", "gateway", "run"]
+    }
+servers["context7"] = {
+    "type": "http",
+    "url": "https://mcp.context7.com/mcp",
+    "serverUrl": "https://mcp.context7.com/mcp"
+}
+if "sentry" not in servers:
+    servers["sentry"] = {
+        "command": "sentry",
+        "args": ["mcp"]
+    }
+if "redis" not in servers:
+    servers["redis"] = {
+        "command": "redis-mcp-server",
+        "args": ["--url", "redis://localhost:6379/0"]
+    }
+servers["cloudflare"] = {
+    "type": "http",
+    "url": "https://mcp.cloudflare.com/mcp",
+    "serverUrl": "https://mcp.cloudflare.com/mcp"
+}
+with open(cfg_path, "w") as f:
+    json.dump(data, f, indent=2)
+' "$cfg" 2>/dev/null || true
+done
+
+# Ensure official Flutter and Dart skills exist in workspace
+if [ -d "$TARGET_DIR" ] && [ ! -d "$TARGET_DIR/.agents/skills/flutter-apply-architecture-best-practices" ]; then
+    (
+        cd "$TARGET_DIR"
+        npx skills add flutter/agent-plugins --skill '*' --agent universal --yes 2>/dev/null || true
+        npx skills add dart-lang/skills --skill '*' --agent universal --yes 2>/dev/null || true
+    )
+fi
+
+# Ensure Cloudflare skills exist in workspace
+if [ -d "$TARGET_DIR" ] && [ ! -d "$TARGET_DIR/.agents/skills/cloudflare" ]; then
+    (
+        cd "$TARGET_DIR"
+        npx skills add cloudflare/skills --skill '*' --agent universal --yes 2>/dev/null || true
+    )
+fi
+
+# --- 13. START SUPABASE LOOPBACK PROXY (IF ACTIVE) ---
 if [ -x "/usr/local/bin/supabase-proxy" ]; then
     /usr/local/bin/supabase-proxy start >/dev/null 2>&1 || true
 fi
 
 echo "🎯 Spliqo Dev Workspace Setup Complete!"
-
