@@ -7,6 +7,7 @@ import 'package:spliqo/domain/models/session.dart';
 import 'package:spliqo/presentation/screens/host_review_screen.dart';
 import 'package:spliqo/presentation/screens/settlement_screen.dart';
 import 'package:spliqo/presentation/widgets/bill_item_tile.dart';
+import 'package:spliqo/presentation/widgets/connection_status_pill.dart';
 import 'package:spliqo/presentation/widgets/estimated_share_footer.dart';
 import 'package:spliqo/presentation/widgets/invite_share_sheet.dart';
 import 'package:spliqo/presentation/widgets/participant_status_row.dart';
@@ -65,15 +66,11 @@ class ActiveRoomScreen extends ConsumerWidget {
             Text(session.title, style: const TextStyle(fontSize: 16)),
             Row(
               children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Colors.green,
-                    shape: BoxShape.circle,
-                  ),
+                ConnectionStatusPill(
+                  status: state.connectionStatus,
+                  onRetry: notifier.refresh,
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
                 Text(
                   isReviewing ? 'Reviewing Phase' : 'Live session',
                   style: theme.textTheme.labelSmall?.copyWith(color: Colors.grey),
@@ -97,6 +94,12 @@ class ActiveRoomScreen extends ConsumerWidget {
               );
             },
           ),
+          if (isHost && !isReviewing)
+            IconButton(
+              icon: const Icon(Icons.lock_clock_outlined),
+              tooltip: 'Force Lock Room',
+              onPressed: () => _showForceLockDialog(context, notifier),
+            ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: notifier.refresh,
@@ -171,7 +174,7 @@ class ActiveRoomScreen extends ConsumerWidget {
                   ],
                 ),
                 TextButton.icon(
-                  onPressed: () => _showParticipantsDialog(context, state),
+                  onPressed: () => _showParticipantsDialog(context, state, notifier),
                   icon: const Icon(Icons.people_outline, size: 18),
                   label: Text('${state.participants.length} Participants'),
                 ),
@@ -221,14 +224,21 @@ class ActiveRoomScreen extends ConsumerWidget {
     );
   }
 
-  void _showParticipantsDialog(BuildContext context, SessionRoomState state) {
+  void _showParticipantsDialog(
+    BuildContext context,
+    SessionRoomState state,
+    SessionRoomNotifier notifier,
+  ) {
     unawaited(
       showModalBottomSheet<void>(
         context: context,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        builder: (_) {
+        builder: (bottomSheetContext) {
+          final hasIncomplete =
+              state.participants.any((p) => !p.isSelectionCompleted);
+
           return SafeArea(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -267,10 +277,78 @@ class ActiveRoomScreen extends ConsumerWidget {
                     },
                   ),
                 ),
+                if (state.isHost &&
+                    state.session?.status == SessionStatus.active &&
+                    hasIncomplete) ...[
+                  const Divider(height: 1),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.of(bottomSheetContext).pop();
+                          _showForceLockDialog(context, notifier);
+                        },
+                        icon: const Icon(
+                          Icons.lock_clock_outlined,
+                          color: Colors.orange,
+                        ),
+                        label: const Text(
+                          'Force Lock Room (Mark Inactive Done)',
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.orange.shade900,
+                          side: BorderSide(color: Colors.orange.shade300),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           );
         },
+      ),
+    );
+  }
+
+  void _showForceLockDialog(
+    BuildContext context,
+    SessionRoomNotifier notifier,
+  ) {
+    unawaited(
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.lock_outline, color: Colors.orange),
+              SizedBox(width: 8),
+              Text('Force Lock Room?'),
+            ],
+          ),
+          content: const Text(
+            'Any participants who have not tapped "Done Selecting" will be marked complete with their currently claimed items. The room will transition to the Reviewing phase (STANDARDS.md §3.3).',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange.shade800,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                unawaited(notifier.lockRoom());
+              },
+              child: const Text('Lock Room'),
+            ),
+          ],
+        ),
       ),
     );
   }

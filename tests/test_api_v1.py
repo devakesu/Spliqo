@@ -433,3 +433,99 @@ async def test_parse_receipt_image(
     assert any("Garlic Naan #1" in n for n in item_names)
     assert any("Garlic Naan #2" in n for n in item_names)
 
+
+@pytest.mark.asyncio
+async def test_host_lock_and_reopen_room(
+    async_client: AsyncClient,
+    host_user_id: str,
+    guest_user_id: str,
+) -> None:
+    """Test host force-lock (§3.3) and host room re-opening transitions."""
+    host_auth = make_auth_header(host_user_id)
+    guest_auth = make_auth_header(guest_user_id)
+
+    # 1. Host creates Draft session
+    draft_payload = {
+        "title": "Team Lunch",
+        "subtotal_paise": 4000,
+        "tax_paise": 0,
+        "service_charge_paise": 0,
+        "discount_paise": 0,
+        "round_off_paise": 0,
+        "total_paise": 4000,
+        "host_display_name": "Host Alice",
+        "items": [
+            {"name": "Burger", "price_paise": 2000, "position": 0},
+            {"name": "Fries", "price_paise": 2000, "position": 1},
+        ],
+    }
+    draft_resp = await async_client.post(
+        "/api/v1/sessions/draft",
+        json=draft_payload,
+        headers=host_auth,
+    )
+    assert draft_resp.status_code == 201
+    session_id = draft_resp.json()["id"]
+
+    # 2. Host activates and invites guest
+    await async_client.post(f"/api/v1/sessions/{session_id}/activate", headers=host_auth)
+    invite_resp = await async_client.post(f"/api/v1/sessions/{session_id}/invites", headers=host_auth)
+    invite_token = invite_resp.json()["invite_token"]
+
+    join_resp = await async_client.post(
+        "/api/v1/sessions/join",
+        json={"invite_token": invite_token, "display_name": "Guest Bob"},
+        headers=guest_auth,
+    )
+    assert join_resp.status_code == 200
+    guest_pid = join_resp.json()["id"]
+
+    # Guest has NOT completed selection yet
+    async with get_db_connection() as conn:
+        p_row = await conn.fetchrow("SELECT selection_completed_at FROM public.session_participants WHERE id = $1;", guest_pid)
+        assert p_row["selection_completed_at"] is None
+
+    # 3. Non-host attempts to lock room -> 403 Forbidden
+    guest_lock = await async_client.post(f"/api/v1/sessions/{session_id}/lock", headers=guest_auth)
+    assert guest_lock.status_code == 403
+
+    # 4. Host locks room (STANDARDS.md §3.3 forced completion)
+    host_lock = await async_client.post(f"/api/v1/sessions/{session_id}/lock", headers=host_auth)
+    assert host_lock.status_code == 200
+    assert host_lock.json()["status"] == "reviewing"
+
+    # Verify participant is now marked complete
+    async with get_db_connection() as conn:
+        p_row_after = await conn.fetchrow("SELECT selection_completed_at FROM public.session_participants WHERE id = $1;", guest_pid)
+        assert p_row_after["selection_completed_at"] is not None
+
+        # Verify audit log recorded session_locked with forced=True
+        audit_event = await conn.fetchrow(
+            "SELECT * FROM public.audit_log WHERE resource_id = $1 AND action = 'session_locked';",
+            session_id,
+        )
+        assert audit_event is not None
+        assert "forced" in audit_event["after_state"]
+
+    # 5. Non-host attempts to reopen room -> 403 Forbidden
+    guest_reopen = await async_client.post(f"/api/v1/sessions/{session_id}/reopen", headers=guest_auth)
+    assert guest_reopen.status_code == 403
+
+    # 6. Host reopens room before finalization (reviewing -> active)
+    host_reopen = await async_client.post(f"/api/v1/sessions/{session_id}/reopen", headers=host_auth)
+    assert host_reopen.status_code == 200
+    assert host_reopen.json()["status"] == "active"
+
+    # Verify participant selection_completed_at is reset to NULL so they can select again
+    async with get_db_connection() as conn:
+        p_row_reopened = await conn.fetchrow("SELECT selection_completed_at FROM public.session_participants WHERE id = $1;", guest_pid)
+        assert p_row_reopened["selection_completed_at"] is None
+
+        # Verify audit log recorded session_reopened
+        reopen_audit = await conn.fetchrow(
+            "SELECT * FROM public.audit_log WHERE resource_id = $1 AND action = 'session_reopened';",
+            session_id,
+        )
+        assert reopen_audit is not None
+
+

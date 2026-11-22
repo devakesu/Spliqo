@@ -72,6 +72,24 @@ async def activate_session(
     return await sessions_service.activate_session(user_id=user_id, session_id=session_id)
 
 
+@router.post("/{session_id}/lock", response_model=SessionResponse)
+async def lock_session(
+    session_id: str,
+    user_id: Annotated[str, Depends(get_current_user_id)],
+) -> SessionResponse:
+    """Host action to force lock the room and transition to reviewing phase."""
+    return await sessions_service.lock_session(user_id=user_id, session_id=session_id)
+
+
+@router.post("/{session_id}/reopen", response_model=SessionResponse)
+async def reopen_session(
+    session_id: str,
+    user_id: Annotated[str, Depends(get_current_user_id)],
+) -> SessionResponse:
+    """Host action to reopen the room before finalisation or when settlements have not started."""
+    return await sessions_service.reopen_session(user_id=user_id, session_id=session_id)
+
+
 @router.post("/{session_id}/resolve-unclaimed")
 async def resolve_unclaimed(
     session_id: str,

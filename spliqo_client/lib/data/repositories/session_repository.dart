@@ -57,6 +57,18 @@ class SessionRepository {
     return SessionModel.fromJson(response);
   }
 
+  /// Host force locks active room -> reviewing (STANDARDS.md Section 3.3).
+  Future<SessionModel> lockRoom(String sessionId) async {
+    final response = await _apiClient.post('/sessions/$sessionId/lock');
+    return SessionModel.fromJson(response);
+  }
+
+  /// Host reopens room before finalization or when settlements have not started (STANDARDS.md Section 3.3).
+  Future<SessionModel> reopenRoom(String sessionId) async {
+    final response = await _apiClient.post('/sessions/$sessionId/reopen');
+    return SessionModel.fromJson(response);
+  }
+
   /// Host bulk resolves unclaimed items during reviewing phase (Screen 3).
   Future<Map<String, dynamic>> resolveUnclaimed({
     required String sessionId,

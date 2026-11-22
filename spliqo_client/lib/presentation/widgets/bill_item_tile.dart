@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:spliqo/core/utils/currency_formatter.dart';
+import 'package:spliqo/core/utils/haptic_feedback_service.dart';
 import 'package:spliqo/domain/models/session.dart';
 
 /// Bill item tile allowing claim toggle with reactive claimant badges.
@@ -18,6 +21,12 @@ class BillItemTile extends StatelessWidget {
   final List<ParticipantModel> claimants;
   final VoidCallback onToggleClaim;
   final bool isFrozen;
+
+  void _handleTap() {
+    if (isFrozen) return;
+    unawaited(HapticFeedbackService.selection());
+    onToggleClaim();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +49,7 @@ class BillItemTile extends StatelessWidget {
           ? theme.colorScheme.primaryContainer.withValues(alpha: 0.2)
           : theme.colorScheme.surface,
       child: InkWell(
-        onTap: isFrozen ? null : onToggleClaim,
+        onTap: isFrozen ? null : _handleTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -51,7 +60,7 @@ class BillItemTile extends StatelessWidget {
                 children: [
                   Checkbox(
                     value: isClaimedByMe,
-                    onChanged: isFrozen ? null : (_) => onToggleClaim(),
+                    onChanged: isFrozen ? null : (_) => _handleTap(),
                     activeColor: theme.colorScheme.primary,
                   ),
                   const SizedBox(width: 8),

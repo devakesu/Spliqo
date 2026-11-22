@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:spliqo/core/utils/currency_formatter.dart';
+import 'package:spliqo/core/utils/haptic_feedback_service.dart';
+import 'package:spliqo/presentation/widgets/animated_paise_counter.dart';
 
 /// Sticky bottom footer displaying the running provisional share adhering to Section 15.3:
 /// - Prominently labeled "YOUR CURRENT ESTIMATED SHARE"
@@ -18,6 +21,11 @@ class EstimatedShareFooter extends StatelessWidget {
   final bool isCompleted;
   final VoidCallback onDoneSelecting;
   final bool isLoading;
+
+  void _handleDoneSelecting() {
+    unawaited(HapticFeedbackService.impact());
+    onDoneSelecting();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,8 +95,8 @@ class EstimatedShareFooter extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        CurrencyFormatter.formatPaise(estimatedSharePaise),
+                      AnimatedPaiseCounter(
+                        amountPaise: estimatedSharePaise,
                         style: theme.textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: theme.colorScheme.primary,
@@ -100,7 +108,7 @@ class EstimatedShareFooter extends StatelessWidget {
                 const SizedBox(width: 12),
                 if (!isCompleted)
                   ElevatedButton.icon(
-                    onPressed: isLoading ? null : onDoneSelecting,
+                    onPressed: isLoading ? null : _handleDoneSelecting,
                     icon: isLoading
                         ? const SizedBox(
                             width: 16,

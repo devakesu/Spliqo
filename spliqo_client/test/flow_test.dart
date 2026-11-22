@@ -52,6 +52,8 @@ class FakeSessionRepository implements SessionRepository {
 
   bool activated = false;
   bool finalized = false;
+  bool locked = false;
+  bool reopened = false;
   String? resolvedAction;
   String? resolvedTargetParticipantId;
   List<String>? resolvedItemIds;
@@ -84,6 +86,20 @@ class FakeSessionRepository implements SessionRepository {
   @override
   Future<SessionModel> activateSession(String sessionId) async {
     activated = true;
+    session = session?.copyWith(status: SessionStatus.active);
+    return session!;
+  }
+
+  @override
+  Future<SessionModel> lockRoom(String sessionId) async {
+    locked = true;
+    session = session?.copyWith(status: SessionStatus.reviewing);
+    return session!;
+  }
+
+  @override
+  Future<SessionModel> reopenRoom(String sessionId) async {
+    reopened = true;
     session = session?.copyWith(status: SessionStatus.active);
     return session!;
   }
@@ -488,14 +504,14 @@ void main() {
       // Tap first item (Paneer Butter Masala: ₹400.00)
       // Estimated share = 40000 * 68250 / 65000 = 42000 paise = ₹420.00
       await tester.tap(find.text('Paneer Butter Masala'));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Estimated share should now be ₹420.00
       expect(find.text('₹420.00'), findsOneWidget);
 
       // Tap "Done Selecting"
       await tester.tap(find.text('Done Selecting'));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Should now freeze selection
       expect(find.text('Selection Completed'), findsOneWidget);

@@ -8,6 +8,7 @@ import 'package:spliqo/data/repositories/payment_repository.dart';
 import 'package:spliqo/data/repositories/session_repository.dart';
 import 'package:spliqo/domain/allocation/allocation.dart';
 import 'package:spliqo/domain/models/session.dart';
+import 'package:spliqo/presentation/widgets/connection_status_pill.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // -----------------------------------------------------------------------------
@@ -54,6 +55,7 @@ class SessionRoomState {
     this.claims = const [],
     this.settlements = const [],
     this.currentParticipantId,
+    this.connectionStatus = RealtimeConnectionStatus.live,
     this.isLoading = false,
     this.errorMessage,
   });
@@ -63,6 +65,7 @@ class SessionRoomState {
   final List<ClaimModel> claims;
   final List<SettlementModel> settlements;
   final String? currentParticipantId;
+  final RealtimeConnectionStatus connectionStatus;
   final bool isLoading;
   final String? errorMessage;
 
@@ -136,6 +139,7 @@ class SessionRoomState {
     List<ClaimModel>? claims,
     List<SettlementModel>? settlements,
     String? currentParticipantId,
+    RealtimeConnectionStatus? connectionStatus,
     bool? isLoading,
     String? errorMessage,
   }) {
@@ -145,6 +149,7 @@ class SessionRoomState {
       claims: claims ?? this.claims,
       settlements: settlements ?? this.settlements,
       currentParticipantId: currentParticipantId ?? this.currentParticipantId,
+      connectionStatus: connectionStatus ?? this.connectionStatus,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
     );
@@ -240,8 +245,20 @@ class SessionRoomNotifier extends Notifier<SessionRoomState> {
           schema: 'public',
           table: 'participant_settlements',
           callback: (_) => _onInvalidationSignal(),
-        )
-        .subscribe();
+        );
+
+    _channel?.subscribe((status, [error]) {
+      if (status == RealtimeSubscribeStatus.subscribed) {
+        state = state.copyWith(
+          connectionStatus: RealtimeConnectionStatus.live,
+        );
+      } else if (status == RealtimeSubscribeStatus.timedOut ||
+          status == RealtimeSubscribeStatus.closed) {
+        state = state.copyWith(
+          connectionStatus: RealtimeConnectionStatus.reconnecting,
+        );
+      }
+    });
   }
 
   void _onInvalidationSignal() {
@@ -263,9 +280,12 @@ class SessionRoomNotifier extends Notifier<SessionRoomState> {
         participants: participants,
         claims: claims,
         settlements: settlements,
+        connectionStatus: RealtimeConnectionStatus.live,
       );
     } on Exception catch (_) {
-      // Invalidation refetch error handled gracefully without crashing UI
+      state = state.copyWith(
+        connectionStatus: RealtimeConnectionStatus.offline,
+      );
     }
   }
 
@@ -331,6 +351,32 @@ class SessionRoomNotifier extends Notifier<SessionRoomState> {
       state = state.copyWith(errorMessage: f.message);
     } on Exception catch (e) {
       state = state.copyWith(errorMessage: 'Could not complete selection: $e');
+    }
+  }
+
+  /// Host force lock room -> reviewing (STANDARDS.md Section 3.3).
+  Future<void> lockRoom() async {
+    try {
+      final updated = await sessionRepository.lockRoom(sessionId);
+      state = state.copyWith(session: updated);
+      await _reReadThroughRLS();
+    } on Failure catch (f) {
+      state = state.copyWith(errorMessage: f.message);
+    } on Exception catch (e) {
+      state = state.copyWith(errorMessage: 'Could not lock room: $e');
+    }
+  }
+
+  /// Host reopen room before finalization (STANDARDS.md Section 3.3).
+  Future<void> reopenRoom() async {
+    try {
+      final updated = await sessionRepository.reopenRoom(sessionId);
+      state = state.copyWith(session: updated);
+      await _reReadThroughRLS();
+    } on Failure catch (f) {
+      state = state.copyWith(errorMessage: f.message);
+    } on Exception catch (e) {
+      state = state.copyWith(errorMessage: 'Could not reopen room: $e');
     }
   }
 

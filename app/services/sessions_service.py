@@ -273,6 +273,129 @@ async def activate_session(user_id: str, session_id: str) -> SessionResponse:
         )
 
 
+async def lock_session(user_id: str, session_id: str) -> SessionResponse:
+    """Host action to force lock the room and transition to reviewing phase (STANDARDS.md Section 3.3)."""
+    async with get_db_connection() as conn, conn.transaction():
+        session_row = await sessions_repo.lock_session_for_update(conn, session_id)
+        if not session_row:
+            raise NotFoundError("Session not found.")
+
+        if str(session_row["host_id"]) != user_id:
+            raise ForbiddenError("Only the host can lock the room.")
+
+        if session_row["status"] != "active":
+            raise ConflictError(f"Cannot lock session in '{session_row['status']}' state.")
+
+        # Forced completion on host lock: mark incomplete participants complete (Section 3.3)
+        incomplete_rows = await conn.fetch(
+            """
+            UPDATE public.session_participants
+            SET selection_completed_at = now()
+            WHERE session_id = $1 AND selection_completed_at IS NULL
+            RETURNING id, user_id;
+            """,
+            session_id,
+        )
+
+        updated_session = await sessions_repo.update_session_status(conn, session_id, "reviewing")
+        items = await sessions_repo.get_session_items(conn, session_id)
+
+        await audit_repo.record_audit_event(
+            conn=conn,
+            actor_id=user_id,
+            action="session_locked",
+            resource_type="session",
+            resource_id=session_id,
+            before_state=session_row,
+            after_state={
+                **dict(updated_session),
+                "forced": True,
+                "forced_participants": [str(r["id"]) for r in incomplete_rows],
+            },
+        )
+
+        return SessionResponse(
+            id=str(updated_session["id"]),
+            host_id=str(updated_session["host_id"]),
+            title=updated_session["title"],
+            currency=updated_session["currency"],
+            subtotal_paise=updated_session["subtotal_paise"],
+            tax_paise=updated_session["tax_paise"],
+            service_charge_paise=updated_session["service_charge_paise"],
+            discount_paise=updated_session["discount_paise"],
+            round_off_paise=updated_session["round_off_paise"],
+            total_paise=updated_session["total_paise"],
+            status=updated_session["status"],
+            revision=updated_session["revision"],
+            items=[BillItemResponse(**item) for item in items],
+        )
+
+
+async def reopen_session(user_id: str, session_id: str) -> SessionResponse:
+    """Host action to reopen the room before finalisation or when settlements have not started (STANDARDS.md Section 3.3)."""
+    async with get_db_connection() as conn, conn.transaction():
+        session_row = await sessions_repo.lock_session_for_update(conn, session_id)
+        if not session_row:
+            raise NotFoundError("Session not found.")
+
+        if str(session_row["host_id"]) != user_id:
+            raise ForbiddenError("Only the host can reopen the room.")
+
+        if session_row["status"] == "reviewing":
+            # Reopen from reviewing -> active: reset participants' completion so they can edit selections
+            await conn.execute(
+                """
+                UPDATE public.session_participants
+                SET selection_completed_at = NULL
+                WHERE session_id = $1;
+                """,
+                session_id,
+            )
+            updated_session = await sessions_repo.update_session_status(conn, session_id, "active")
+        elif session_row["status"] == "finalized":
+            # Section 3.3: only if no settlement row has left 'unpaid'
+            unpaid_count = await conn.fetchval(
+                """
+                SELECT count(*) FROM public.participant_settlements
+                WHERE session_id = $1 AND pay_status <> 'unpaid';
+                """,
+                session_id,
+            )
+            if unpaid_count and unpaid_count > 0:
+                raise ConflictError("Cannot reopen session with settlements in progress.")
+            updated_session = await sessions_repo.update_session_status(conn, session_id, "reviewing")
+        else:
+            raise ConflictError(f"Cannot reopen session in '{session_row['status']}' state.")
+
+        items = await sessions_repo.get_session_items(conn, session_id)
+
+        await audit_repo.record_audit_event(
+            conn=conn,
+            actor_id=user_id,
+            action="session_reopened",
+            resource_type="session",
+            resource_id=session_id,
+            before_state=session_row,
+            after_state=dict(updated_session),
+        )
+
+        return SessionResponse(
+            id=str(updated_session["id"]),
+            host_id=str(updated_session["host_id"]),
+            title=updated_session["title"],
+            currency=updated_session["currency"],
+            subtotal_paise=updated_session["subtotal_paise"],
+            tax_paise=updated_session["tax_paise"],
+            service_charge_paise=updated_session["service_charge_paise"],
+            discount_paise=updated_session["discount_paise"],
+            round_off_paise=updated_session["round_off_paise"],
+            total_paise=updated_session["total_paise"],
+            status=updated_session["status"],
+            revision=updated_session["revision"],
+            items=[BillItemResponse(**item) for item in items],
+        )
+
+
 def _build_claims_for_action(
     action: str,
     target_item_ids: list[str],

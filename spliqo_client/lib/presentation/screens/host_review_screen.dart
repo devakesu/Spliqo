@@ -21,7 +21,58 @@ class HostReviewScreen extends ConsumerStatefulWidget {
 
 class _HostReviewScreenState extends ConsumerState<HostReviewScreen> {
   bool _isFinalizing = false;
+  bool _isReopening = false;
   String? _errorMessage;
+
+  Future<void> _confirmReopenRoom() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.lock_open_rounded, color: Colors.blue),
+            SizedBox(width: 8),
+            Text('Reopen Room?'),
+          ],
+        ),
+        content: const Text(
+          'Reopening the room moves the session back to active selection and allows participants to modify their item claims (STANDARDS.md §3.3).',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Reopen Room'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      setState(() {
+        _isReopening = true;
+        _errorMessage = null;
+      });
+      try {
+        final repo = ref.read(sessionRepositoryProvider);
+        await repo.reopenRoom(widget.sessionId);
+        await ref.read(sessionRoomProvider(widget.sessionId).notifier).refresh();
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      } on Object catch (e) {
+        if (mounted) {
+          setState(() {
+            _isReopening = false;
+            _errorMessage = 'Could not reopen room: $e';
+          });
+        }
+      }
+    }
+  }
 
   Future<void> _openResolveModal(
     List<BillItemModel> unclaimedItems,
@@ -110,6 +161,13 @@ class _HostReviewScreenState extends ConsumerState<HostReviewScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Host Final Review'),
+        actions: [
+          TextButton.icon(
+            onPressed: (_isFinalizing || _isReopening) ? null : _confirmReopenRoom,
+            icon: const Icon(Icons.lock_open_rounded, size: 18),
+            label: const Text('Reopen'),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
