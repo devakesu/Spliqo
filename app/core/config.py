@@ -68,12 +68,12 @@ class Settings(BaseSettings):
     redis_url: str | None = None
 
     # --- Database Settings ---
-    database_url: str = "postgresql://postgres:postgres@172.19.0.2:5432/postgres"
+    database_url: str = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
     database_pool_min: int = 2
     database_pool_max: int = 10
 
     # --- Supabase Integration ---
-    supabase_url: str = "http://172.19.0.2:54321"
+    supabase_url: str = "http://127.0.0.1:54321"
     supabase_anon_key: str = ""
     supabase_service_role_key: str = ""
     supabase_jwt_secret: str = ""

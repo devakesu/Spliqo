@@ -6,11 +6,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 final supabaseClientProvider = Provider<SupabaseClient>((ref) {
   try {
     return Supabase.instance.client;
-  } on Exception catch (_) {
+  } on Object catch (_) {
     // If Supabase.initialize has not completed yet, construct a client instance
-    return SupabaseClient(
+    final client = SupabaseClient(
       AppConfig.current.supabaseUrl,
       AppConfig.current.supabaseAnonKey,
+      authOptions: const AuthClientOptions(autoRefreshToken: false),
     );
+    ref.onDispose(client.dispose);
+    return client;
   }
 });

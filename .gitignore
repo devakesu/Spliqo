@@ -73,6 +73,7 @@ $RECYCLE.BIN/
 *~
 .fuse_hidden*
 .directory
+tmp/
 
 # ==========================================
 # 8. Agentic & Coding Assistant Overrides

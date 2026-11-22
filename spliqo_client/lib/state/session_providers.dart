@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:spliqo/core/errors/failures.dart';
+import 'package:spliqo/core/storage/secure_storage_service.dart';
 import 'package:spliqo/data/datasources/api_client.dart';
 import 'package:spliqo/data/datasources/supabase_client_provider.dart';
 import 'package:spliqo/data/repositories/payment_repository.dart';
@@ -15,9 +16,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 final Provider<ApiClient> apiClientProvider = Provider<ApiClient>((ref) {
   final supabase = ref.watch(supabaseClientProvider);
+  final secureStorage = ref.watch(secureStorageServiceProvider);
   return ApiClient(
     tokenProvider: () async {
-      return supabase.auth.currentSession?.accessToken;
+      final supabaseToken = supabase.auth.currentSession?.accessToken;
+      if (supabaseToken != null && supabaseToken.isNotEmpty) {
+        return supabaseToken;
+      }
+      return await secureStorage.getAuthToken();
     },
   );
 });
@@ -157,10 +163,11 @@ class SessionRoomNotifier extends Notifier<SessionRoomState> {
 
   @override
   SessionRoomState build() {
+    final client = supabaseClient;
     ref.onDispose(() {
       _debounceTimer?.cancel();
       if (_channel != null) {
-        unawaited(supabaseClient.removeChannel(_channel!));
+        unawaited(client.removeChannel(_channel!));
       }
     });
 
@@ -170,12 +177,14 @@ class SessionRoomNotifier extends Notifier<SessionRoomState> {
 
   Future<void> _init() async {
     await _fetchInitialData();
-    _subscribeRealtime();
+    try {
+      _subscribeRealtime();
+    } on Object catch (_) {
+      // Realtime subscription unavailable or mocked
+    }
   }
 
   Future<void> _fetchInitialData() async {
-    state = state.copyWith(isLoading: true);
-
     try {
       final session = await sessionRepository.fetchSession(sessionId);
       final participants = await sessionRepository.fetchParticipants(sessionId);
@@ -196,7 +205,7 @@ class SessionRoomNotifier extends Notifier<SessionRoomState> {
         currentParticipantId: current?.id,
         isLoading: false,
       );
-    } on Exception catch (e) {
+    } on Object catch (e) {
       state = state.copyWith(
         isLoading: false,
         errorMessage: 'Failed to load session: $e',
