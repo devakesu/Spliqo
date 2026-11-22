@@ -27,6 +27,19 @@ class CreateDraftSessionRequest(BaseModel):
     items: list[CreateDraftItemSchema] = Field(..., min_length=1, max_length=200)
 
 
+class UpdateDraftSessionRequest(BaseModel):
+    """Request payload to update a draft session and its line items before activation."""
+
+    title: str | None = Field(None, min_length=1, max_length=80)
+    subtotal_paise: StrictInt = Field(..., ge=1, le=10_000_000)
+    tax_paise: StrictInt = Field(0, ge=0)
+    service_charge_paise: StrictInt = Field(0, ge=0)
+    discount_paise: StrictInt = Field(0, ge=0)
+    round_off_paise: StrictInt = Field(0)
+    total_paise: StrictInt = Field(..., ge=1, le=10_000_000)
+    items: list[CreateDraftItemSchema] = Field(..., min_length=1, max_length=200)
+
+
 class BillItemResponse(BaseModel):
     """Response DTO for an individual line item."""
 

@@ -21,6 +21,7 @@ from app.schemas.sessions import (
     ParseReceiptResponse,
     ResolveUnclaimedRequest,
     SessionResponse,
+    UpdateDraftSessionRequest,
 )
 
 
@@ -118,6 +119,79 @@ async def create_draft(
             total_paise=session_row["total_paise"],
             status=session_row["status"],
             revision=session_row["revision"],
+            items=[BillItemResponse(**item) for item in items],
+        )
+
+
+async def update_draft(
+    user_id: str,
+    session_id: str,
+    data: UpdateDraftSessionRequest,
+) -> SessionResponse:
+    """Update line items and adjustments in an existing draft session before activation."""
+    # 1. Validate line items sum to subtotal_paise (Section 4.2)
+    items_sum = sum(item.price_paise for item in data.items)
+    if items_sum != data.subtotal_paise:
+        raise ReconciliationError("Sum of line items must equal subtotal_paise.")
+
+    # 2. Validate equation: total = subtotal + tax + service - discount + round_off
+    expected_total = (
+        data.subtotal_paise
+        + data.tax_paise
+        + data.service_charge_paise
+        - data.discount_paise
+        + data.round_off_paise
+    )
+    if expected_total != data.total_paise:
+        raise ReconciliationError("Session adjustments do not reconcile with total_paise.")
+
+    async with get_db_connection() as conn, conn.transaction():
+        # Lock session for update to verify state
+        session_row = await sessions_repo.lock_session_for_update(conn, session_id)
+        if not session_row:
+            raise NotFoundError("Session not found.")
+
+        if str(session_row["host_id"]) != user_id:
+            raise ForbiddenError("Only the host can update draft session items.")
+
+        if session_row["status"] != "draft":
+            raise ConflictError(f"Cannot edit session in '{session_row['status']}' state.")
+
+        updated_row, items = await sessions_repo.update_draft_session_with_items(
+            conn=conn,
+            session_id=session_id,
+            title=data.title,
+            subtotal_paise=data.subtotal_paise,
+            tax_paise=data.tax_paise,
+            service_charge_paise=data.service_charge_paise,
+            discount_paise=data.discount_paise,
+            round_off_paise=data.round_off_paise,
+            total_paise=data.total_paise,
+            items=[item.model_dump() for item in data.items],
+        )
+
+        await audit_repo.record_audit_event(
+            conn=conn,
+            actor_id=user_id,
+            action="session_draft_updated",
+            resource_type="session",
+            resource_id=session_id,
+            after_state=updated_row,
+        )
+
+        return SessionResponse(
+            id=str(updated_row["id"]),
+            host_id=str(updated_row["host_id"]),
+            title=updated_row["title"],
+            currency=updated_row["currency"],
+            subtotal_paise=updated_row["subtotal_paise"],
+            tax_paise=updated_row["tax_paise"],
+            service_charge_paise=updated_row["service_charge_paise"],
+            discount_paise=updated_row["discount_paise"],
+            round_off_paise=updated_row["round_off_paise"],
+            total_paise=updated_row["total_paise"],
+            status=updated_row["status"],
+            revision=updated_row["revision"],
             items=[BillItemResponse(**item) for item in items],
         )
 

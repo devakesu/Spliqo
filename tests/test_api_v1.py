@@ -100,6 +100,44 @@ async def test_full_session_lifecycle(
     )
     assert outsider_get.status_code == 404
 
+    # 2b. Host edits line items and adjustments in Draft session
+    update_payload = {
+        "title": "Dinner at Paragon (Updated)",
+        "subtotal_paise": 11000,
+        "tax_paise": 550,
+        "service_charge_paise": 0,
+        "discount_paise": 0,
+        "round_off_paise": 0,
+        "total_paise": 11550,
+        "items": [
+            {"name": "Biryani Special", "price_paise": 7000, "position": 0},
+            {"name": "Juice", "price_paise": 4000, "position": 1},
+        ],
+    }
+    # Outsider forbidden from updating draft
+    outsider_put = await async_client.put(
+        f"/api/v1/sessions/{session_id}/draft",
+        json=update_payload,
+        headers=outsider_auth,
+    )
+    assert outsider_put.status_code == 403
+
+    # Host updates successfully
+    host_put = await async_client.put(
+        f"/api/v1/sessions/{session_id}/draft",
+        json=update_payload,
+        headers=host_auth,
+    )
+    assert host_put.status_code == 200
+    updated_draft = host_put.json()
+    assert updated_draft["title"] == "Dinner at Paragon (Updated)"
+    assert updated_draft["subtotal_paise"] == 11000
+    assert updated_draft["total_paise"] == 11550
+    assert updated_draft["revision"] == draft_data["revision"] + 1
+    assert len(updated_draft["items"]) == 2
+    assert updated_draft["items"][0]["name"] == "Biryani Special"
+    assert updated_draft["items"][0]["price_paise"] == 7000
+
     # 3. Host activates session
     activate_resp = await async_client.post(
         f"/api/v1/sessions/{session_id}/activate",
@@ -186,8 +224,8 @@ async def test_full_session_lifecycle(
     fin_data = finalize_resp.json()
     assert fin_data["status"] == "finalized"
     amounts = fin_data["final_amounts"]
-    # Total must equal exactly 10500 paise
-    assert sum(amounts.values()) == 10500
+    # Total must equal exactly updated_draft total paise
+    assert sum(amounts.values()) == updated_draft["total_paise"]
 
     # 9. Guest selects payment preference 'self_pay'
     pref_resp = await async_client.patch(

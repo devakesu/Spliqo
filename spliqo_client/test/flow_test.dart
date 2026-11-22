@@ -74,6 +74,14 @@ class FakeSessionRepository implements SessionRepository {
   }
 
   @override
+  Future<SessionModel> updateDraftSession(
+    String sessionId,
+    Map<String, dynamic> draftData,
+  ) async {
+    return session!;
+  }
+
+  @override
   Future<SessionModel> activateSession(String sessionId) async {
     activated = true;
     session = session?.copyWith(status: SessionStatus.active);

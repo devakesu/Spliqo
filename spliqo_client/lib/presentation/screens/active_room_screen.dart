@@ -8,6 +8,7 @@ import 'package:spliqo/presentation/screens/host_review_screen.dart';
 import 'package:spliqo/presentation/screens/settlement_screen.dart';
 import 'package:spliqo/presentation/widgets/bill_item_tile.dart';
 import 'package:spliqo/presentation/widgets/estimated_share_footer.dart';
+import 'package:spliqo/presentation/widgets/invite_share_sheet.dart';
 import 'package:spliqo/presentation/widgets/participant_status_row.dart';
 import 'package:spliqo/state/session_providers.dart';
 
@@ -82,6 +83,20 @@ class ActiveRoomScreen extends ConsumerWidget {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.qr_code_rounded),
+            tooltip: 'Table QR & Invite Code',
+            onPressed: () {
+              unawaited(
+                InviteShareSheet.show(
+                  context,
+                  sessionId: sessionId,
+                  roomCode: sessionId.substring(0, 6).toUpperCase(),
+                  sessionTitle: session.title,
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: notifier.refresh,

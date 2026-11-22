@@ -39,6 +39,18 @@ class SessionRepository {
     return SessionModel.fromJson(response);
   }
 
+  /// Host updates draft session items and adjustments (Screen 1).
+  Future<SessionModel> updateDraftSession(
+    String sessionId,
+    Map<String, dynamic> draftData,
+  ) async {
+    final response = await _apiClient.put(
+      '/sessions/$sessionId/draft',
+      body: draftData,
+    );
+    return SessionModel.fromJson(response);
+  }
+
   /// Host activates draft session -> active (Screen 1 CTA).
   Future<SessionModel> activateSession(String sessionId) async {
     final response = await _apiClient.post('/sessions/$sessionId/activate');

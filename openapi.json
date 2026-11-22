@@ -147,6 +147,75 @@
         }
       }
     },
+    "/v1/sessions/{session_id}/draft": {
+      "put": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "Update Draft Session",
+        "description": "Update line items and adjustments in an existing draft session before activation.",
+        "operationId": "update_draft_session_v1_sessions__session_id__draft_put",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDraftSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/sessions/{session_id}": {
       "get": {
         "tags": [
@@ -954,6 +1023,75 @@
         },
         "responses": {
           "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{session_id}/draft": {
+      "put": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "Update Draft Session",
+        "description": "Update line items and adjustments in an existing draft session before activation.",
+        "operationId": "update_draft_session_api_v1_sessions__session_id__draft_put",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDraftSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
@@ -2278,6 +2416,75 @@
         ],
         "title": "SettlementResponse",
         "description": "Response DTO for participant settlement state."
+      },
+      "UpdateDraftSessionRequest": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "subtotal_paise": {
+            "type": "integer",
+            "maximum": 10000000.0,
+            "minimum": 1.0,
+            "title": "Subtotal Paise"
+          },
+          "tax_paise": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Tax Paise",
+            "default": 0
+          },
+          "service_charge_paise": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Service Charge Paise",
+            "default": 0
+          },
+          "discount_paise": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Discount Paise",
+            "default": 0
+          },
+          "round_off_paise": {
+            "type": "integer",
+            "title": "Round Off Paise",
+            "default": 0
+          },
+          "total_paise": {
+            "type": "integer",
+            "maximum": 10000000.0,
+            "minimum": 1.0,
+            "title": "Total Paise"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CreateDraftItemSchema"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "minItems": 1,
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "subtotal_paise",
+          "total_paise",
+          "items"
+        ],
+        "title": "UpdateDraftSessionRequest",
+        "description": "Request payload to update a draft session and its line items before activation."
       },
       "UpdatePayPreferenceRequest": {
         "properties": {

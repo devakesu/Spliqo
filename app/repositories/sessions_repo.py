@@ -74,6 +74,70 @@ async def create_session_with_items(
     return dict(session_row), inserted_items
 
 
+async def update_draft_session_with_items(
+    conn: asyncpg.Connection,
+    session_id: str,
+    title: str | None,
+    subtotal_paise: int,
+    tax_paise: int,
+    service_charge_paise: int,
+    discount_paise: int,
+    round_off_paise: int,
+    total_paise: int,
+    items: list[dict[str, Any]],
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Update draft session adjustments and replace line items atomically."""
+    update_query = """
+        UPDATE public.sessions
+        SET title = COALESCE($2, title),
+            subtotal_paise = $3,
+            tax_paise = $4,
+            service_charge_paise = $5,
+            discount_paise = $6,
+            round_off_paise = $7,
+            total_paise = $8,
+            revision = revision + 1,
+            updated_at = now()
+        WHERE id = $1
+        RETURNING *;
+    """
+    row = await conn.fetchrow(
+        update_query,
+        session_id,
+        title,
+        subtotal_paise,
+        tax_paise,
+        service_charge_paise,
+        discount_paise,
+        round_off_paise,
+        total_paise,
+    )
+    if not row:
+        raise ValueError(f"Session {session_id} not found.")
+
+    # Delete existing items for draft session
+    await conn.execute("DELETE FROM public.bill_items WHERE session_id = $1;", session_id)
+
+    # Insert updated line items
+    inserted_items: list[dict[str, Any]] = []
+    for idx, item in enumerate(items):
+        item_row = await conn.fetchrow(
+            """
+            INSERT INTO public.bill_items (session_id, position, name, price_paise)
+            VALUES ($1, $2, $3, $4)
+            RETURNING *;
+            """,
+            session_id,
+            item.get("position", idx),
+            item["name"],
+            item["price_paise"],
+        )
+        if item_row:
+            inserted_items.append(dict(item_row))
+
+    return dict(row), inserted_items
+
+
 async def get_session_by_id(
     conn: asyncpg.Connection,
     session_id: str,

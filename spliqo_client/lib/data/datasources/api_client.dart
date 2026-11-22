@@ -75,7 +75,7 @@ class ApiClient {
       return jsonDecode(response.body) as Map<String, dynamic>;
     } on Failure {
       rethrow;
-    } catch (e) {
+    } on Object catch (e) {
       throw Failure.network(e.toString());
     }
   }
@@ -100,7 +100,32 @@ class ApiClient {
       return jsonDecode(response.body) as Map<String, dynamic>;
     } on Failure {
       rethrow;
-    } catch (e) {
+    } on Object catch (e) {
+      throw Failure.network(e.toString());
+    }
+  }
+
+  Future<Map<String, dynamic>> put(
+    String path, {
+    Map<String, dynamic>? body,
+    String? idempotencyKey,
+  }) async {
+    try {
+      final uri = _buildUri(path);
+      final headers = await _headers(idempotencyKey: idempotencyKey);
+      final response = await _httpClient
+          .put(
+            uri,
+            headers: headers,
+            body: body != null ? jsonEncode(body) : null,
+          )
+          .timeout(const Duration(seconds: 30));
+
+      _handleErrorResponse(response);
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } on Failure {
+      rethrow;
+    } on Object catch (e) {
       throw Failure.network(e.toString());
     }
   }
@@ -124,7 +149,7 @@ class ApiClient {
       return jsonDecode(response.body) as Map<String, dynamic>;
     } on Failure {
       rethrow;
-    } catch (e) {
+    } on Object catch (e) {
       throw Failure.network(e.toString());
     }
   }
@@ -164,7 +189,7 @@ class ApiClient {
       return jsonDecode(response.body) as Map<String, dynamic>;
     } on Failure {
       rethrow;
-    } catch (e) {
+    } on Object catch (e) {
       throw Failure.network(e.toString());
     }
   }

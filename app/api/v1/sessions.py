@@ -11,6 +11,7 @@ from app.schemas.sessions import (
     ParseReceiptResponse,
     ResolveUnclaimedRequest,
     SessionResponse,
+    UpdateDraftSessionRequest,
 )
 from app.services import sessions_service
 
@@ -41,6 +42,16 @@ async def create_draft_session(
 ) -> SessionResponse:
     """Create a new draft session and items."""
     return await sessions_service.create_draft(user_id=user_id, data=data)
+
+
+@router.put("/{session_id}/draft", response_model=SessionResponse)
+async def update_draft_session(
+    session_id: str,
+    data: UpdateDraftSessionRequest,
+    user_id: Annotated[str, Depends(get_current_user_id)],
+) -> SessionResponse:
+    """Update line items and adjustments in an existing draft session before activation."""
+    return await sessions_service.update_draft(user_id=user_id, session_id=session_id, data=data)
 
 
 @router.get("/{session_id}", response_model=SessionResponse)
