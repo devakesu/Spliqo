@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:spliqo/data/repositories/payment_repository.dart';
 import 'package:spliqo/data/repositories/session_repository.dart';
+import 'package:spliqo/domain/models/payment_intent.dart';
 import 'package:spliqo/domain/models/session.dart';
 import 'package:spliqo/presentation/screens/active_room_screen.dart';
 import 'package:spliqo/presentation/screens/host_review_screen.dart';
@@ -195,8 +196,14 @@ class FakePaymentRepository implements PaymentRepository {
   String? confirmedAction;
 
   @override
-  Future<String> getPaymentIntent(String sessionId) async {
-    return upiUri;
+  Future<PaymentIntentModel> getPaymentIntent(String sessionId) async {
+    return PaymentIntentModel(
+      upiUri: upiUri,
+      hostVpa: 'host@okhdfcbank',
+      amountPaise: 35000,
+      formattedAmount: '350.00',
+      payeeName: 'Host Alice',
+    );
   }
 
   @override

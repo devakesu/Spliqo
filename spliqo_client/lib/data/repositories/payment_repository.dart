@@ -1,4 +1,5 @@
 import 'package:spliqo/data/datasources/api_client.dart';
+import 'package:spliqo/domain/models/payment_intent.dart';
 import 'package:spliqo/domain/models/session.dart';
 
 /// Repository managing payment intents, preference updates, and host confirmations.
@@ -8,9 +9,9 @@ class PaymentRepository {
   final ApiClient _apiClient;
 
   /// Fetch server-assembled upi://pay URI intent (Section 11.2 of Standards).
-  Future<String> getPaymentIntent(String sessionId) async {
+  Future<PaymentIntentModel> getPaymentIntent(String sessionId) async {
     final response = await _apiClient.get('/sessions/$sessionId/payment-intent');
-    return response['intent_uri'] as String;
+    return PaymentIntentModel.fromJson(response);
   }
 
   /// Update payment preference (self_pay or host_pays).

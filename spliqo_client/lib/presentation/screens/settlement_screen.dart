@@ -1,14 +1,23 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:spliqo/core/utils/currency_formatter.dart';
+import 'package:spliqo/core/utils/haptic_feedback_service.dart';
 import 'package:spliqo/domain/models/session.dart';
+import 'package:spliqo/presentation/widgets/settlement_share_sheet.dart';
+import 'package:spliqo/presentation/widgets/upi_clipboard_fallback_sheet.dart';
 import 'package:spliqo/state/session_providers.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Screen 4: Immutable Final Shares & Settlement (Section 11 & 15.3 Standards)
+///
+/// Features:
+/// - Server-assembled UPI intent handoff via upi://pay.
+/// - Resilient clipboard fallback sheet with 1-tap copy and banking instructions.
+/// - Host real-time settlement confirmation, rejection, and waive actions.
+/// - Settlement progress counter and celebratory banner when all shares are settled.
+/// - Shareable settlement breakdown export for messaging apps.
 class SettlementScreen extends ConsumerStatefulWidget {
   const new({
     required this.sessionId,
@@ -47,7 +56,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
     }
   }
 
-  Future<void> _launchUpiIntent() async {
+  Future<void> _launchUpiIntent({bool forceFallback = false}) async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -55,15 +64,35 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
 
     try {
       final repo = ref.read(paymentRepositoryProvider);
-      final intentUriString = await repo.getPaymentIntent(widget.sessionId);
-      final uri = Uri.parse(intentUriString);
+      final intent = await repo.getPaymentIntent(widget.sessionId);
 
+      if (forceFallback) {
+        if (mounted) {
+          unawaited(
+            UpiClipboardFallbackSheet.show(
+              context,
+              intent: intent,
+              onMarkPaid: _markPaid,
+            ),
+          );
+        }
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final uri = Uri.parse(intent.upiUri);
       final canLaunch = await canLaunchUrl(uri);
       if (canLaunch) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         if (mounted) {
-          _showUpiFallbackDialog(intentUriString);
+          unawaited(
+            UpiClipboardFallbackSheet.show(
+              context,
+              intent: intent,
+              onMarkPaid: _markPaid,
+            ),
+          );
         }
       }
       setState(() => _isLoading = false);
@@ -75,52 +104,13 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
     }
   }
 
-  void _showUpiFallbackDialog(String uriString) {
-    unawaited(
-      showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('UPI App Not Available'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'No installed UPI app could open this payment intent. You can copy the payment URI string below to pay via your bank app:',
-              ),
-              const SizedBox(height: 12),
-              SelectableText(
-                uriString,
-                style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                unawaited(Clipboard.setData(ClipboardData(text: uriString)));
-                Navigator.of(ctx).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Payment URI copied to clipboard')),
-                );
-              },
-              child: const Text('Copy Intent'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Close'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Future<void> _markPaid() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
+
+    unawaited(HapticFeedbackService.impact());
 
     try {
       final repo = ref.read(paymentRepositoryProvider);
@@ -141,6 +131,8 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
       _errorMessage = null;
     });
 
+    unawaited(HapticFeedbackService.impact());
+
     try {
       final repo = ref.read(paymentRepositoryProvider);
       await repo.confirmPayment(
@@ -156,6 +148,57 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
         _errorMessage = 'Host action failed: $e';
       });
     }
+  }
+
+  Future<void> _showRejectDialog(String participantId, String displayName) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Reject Payment?'),
+          ],
+        ),
+        content: Text(
+          'Mark $displayName back to Unpaid? Use this if funds did not arrive in your bank account.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Reject to Unpaid'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _hostConfirm(participantId, 'reject_unpaid');
+    }
+  }
+
+  void _openShareSheet(
+    SessionModel session,
+    List<ParticipantModel> participants,
+    List<SettlementModel> settlements,
+  ) {
+    unawaited(
+      SettlementShareSheet.show(
+        context,
+        session: session,
+        participants: participants,
+        settlements: settlements,
+      ),
+    );
   }
 
   @override
@@ -180,12 +223,41 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
     final isHost = state.isHost;
     final myFinalAmountPaise = currentSettlement?.finalAmountPaise ?? 0;
 
+    // Calculate settlement progress
+    final totalParticipants = state.participants.length;
+    var settledCount = 0;
+    for (final p in state.participants) {
+      if (p.role == ParticipantRole.host) {
+        settledCount++;
+      } else {
+        final s = state.settlements.cast<SettlementModel?>().firstWhere(
+              (item) => item?.participantId == p.id,
+              orElse: () => null,
+            );
+        if (s?.payStatus == PayStatus.paid || s?.payStatus == PayStatus.waived) {
+          settledCount++;
+        }
+      }
+    }
+    final allSettled =
+        settledCount == totalParticipants && totalParticipants > 0;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Final Settlement'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.share_outlined),
+            tooltip: 'Share Breakdown',
+            onPressed: () => _openShareSheet(
+              session,
+              state.participants,
+              state.settlements,
+            ),
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
             onPressed: () =>
                 ref.read(sessionRoomProvider(widget.sessionId).notifier).refresh(),
           ),
@@ -194,41 +266,91 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Final status banner
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.green.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.green.shade200),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.verified, color: Colors.green, size: 28),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+          // Celebratory Banner or Bill Finalised Status Banner
+          if (allSettled)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.shade300),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      const Text(
-                        'Bill Finalised',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
-                        ),
+                      const Icon(
+                        Icons.celebration_rounded,
+                        color: Colors.green,
+                        size: 28,
                       ),
-                      Text(
-                        'Total restaurant amount of ${CurrencyFormatter.formatPaise(session.totalPaise)} has been reconciled and settled.',
-                        style: const TextStyle(fontSize: 12),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'All Shares Settled! 🎉',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade800,
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Every participant has completed their share. The dining session is fully settled.',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed: () => _openShareSheet(
+                      session,
+                      state.participants,
+                      state.settlements,
+                    ),
+                    icon: const Icon(Icons.share_rounded, size: 16),
+                    label: const Text('Export & Share Breakdown'),
+                  ),
+                ],
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.shade200),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.verified, color: Colors.green, size: 28),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Bill Finalised',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
+                        ),
+                        Text(
+                          'Total restaurant amount of ${CurrencyFormatter.formatPaise(session.totalPaise)} has been reconciled and settled. ($settledCount of $totalParticipants settled)',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
           const SizedBox(height: 20),
+
           // Participant's Final Share Card
           if (!isHost && currentParticipant != null) ...[
             Card(
@@ -335,7 +457,8 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
                     ),
                     const SizedBox(height: 16),
                     // Action according to preference and status
-                    if (currentSettlement?.payPreference == PayPreference.selfPay) ...[
+                    if (currentSettlement?.payPreference ==
+                        PayPreference.selfPay) ...[
                       if (currentSettlement?.payStatus == PayStatus.unpaid) ...[
                         ElevatedButton.icon(
                           onPressed: _isLoading ? null : _launchUpiIntent,
@@ -348,12 +471,25 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        OutlinedButton(
-                          onPressed: _isLoading ? null : _markPaid,
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size.fromHeight(44),
-                          ),
-                          child: const Text('Mark as Paid (Notify Host)'),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: _isLoading
+                                    ? null
+                                    : () => _launchUpiIntent(forceFallback: true),
+                                icon: const Icon(Icons.copy_rounded, size: 16),
+                                label: const Text('Copy UPI Details'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: _isLoading ? null : _markPaid,
+                                child: const Text('Mark as Paid (Notify Host)'),
+                              ),
+                            ),
+                          ],
                         ),
                       ] else if (currentSettlement?.payStatus ==
                           PayStatus.pending) ...[
@@ -426,10 +562,13 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
             ),
             const SizedBox(height: 24),
           ],
+
           // Host Management View: All Participant Shares & Confirmation
           Text(
             isHost ? 'Participant Settlements & Actions' : 'All Participant Shares',
-            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 8),
           ...state.participants.map((p) {
@@ -439,9 +578,19 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
                 );
             final amountPaise = s?.finalAmountPaise ?? 0;
             final isSelf = p.id == currentParticipant?.id;
+            final isPending = s?.payStatus == PayStatus.pending;
 
             return Card(
               margin: const EdgeInsets.symmetric(vertical: 4),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: isPending
+                      ? Colors.orange.shade300
+                      : theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                  width: isPending ? 1.5 : 1,
+                ),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
@@ -472,7 +621,9 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
                               children: [
                                 Text(
                                   p.displayName + (isSelf ? ' (You)' : ''),
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                                 Text(
                                   s?.payPreference == PayPreference.hostPays
@@ -518,7 +669,25 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          if (s?.payStatus == PayStatus.pending)
+                          if (isPending) ...[
+                            OutlinedButton.icon(
+                              onPressed: _isLoading
+                                  ? null
+                                  : () => _showRejectDialog(p.id, p.displayName),
+                              icon: const Icon(
+                                Icons.close_rounded,
+                                size: 16,
+                                color: Colors.red,
+                              ),
+                              label: const Text(
+                                'Reject',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: Colors.red),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
                             ElevatedButton.icon(
                               onPressed: _isLoading
                                   ? null
@@ -530,6 +699,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
                                 foregroundColor: Colors.white,
                               ),
                             ),
+                          ],
                           if (s?.payPreference == PayPreference.hostPays &&
                               s?.payStatus != PayStatus.waived) ...[
                             const SizedBox(width: 8),
