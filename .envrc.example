@@ -69,24 +69,24 @@ export INFISICAL_SECRETS_UNIVERSAL_AUTH_CLIENT_ID="<YOUR_CLIENT_ID>"
 export INFISICAL_SECRETS_UNIVERSAL_AUTH_CLIENT_SECRET="<YOUR_CLIENT_SECRET>"
 
 # ⚠️ Infisical Project Workspace ID
-# Target a specific Infisical project without requiring a local infisical.json file
-# export INFISICAL_SECRETS_PROJECT_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+# Target a specific Infisical project without requiring a local .infisical.json file
+export INFISICAL_PROJECT_ID="<YOUR_PROJECT_ID>"
 
 # ----------------------------------------------------------------------------
 # 🔏 Infisical KMS Envelope Encryption (Zero-Trust Key Management)
 # ----------------------------------------------------------------------------
 
 # ⚠️ Infisical KMS Master Key ID (UUID of KMS Root Key used to wrap Institute TDEKs and Platform PDEK)
-INFISICAL_KMS_KEY_ID=12345678-1234-1234-1234-123456789abc
+export INFISICAL_KMS_KEY_ID="12345678-1234-1234-1234-123456789abc"
 
 # ⚠️ Infisical Universal Auth Machine Identity Credentials for KMS
 # Production: Single-use bootstrap secret (maxUses=1, ttl=10m) burned into RAM on boot
-INFISICAL_KMS_UNIVERSAL_AUTH_CLIENT_ID=
-INFISICAL_KMS_UNIVERSAL_AUTH_CLIENT_SECRET=
+export INFISICAL_KMS_UNIVERSAL_AUTH_CLIENT_ID="<YOUR_KMS_CLIENT_ID>"
+export INFISICAL_KMS_UNIVERSAL_AUTH_CLIENT_SECRET="<YOUR_KMS_CLIENT_SECRET>"
 
 # ⚠️ Application runtime port and environment bindings
 export PORT="8000"
-export APP_ENV="development"
+export ENVIRONMENT="development"
 
 # ----------------------------------------------------------------------------
 # Automatic Infisical Session Authentication
@@ -114,6 +114,9 @@ infisical_auth() {
         --plain --silent 2>/dev/null)
       if [ -n "$token" ]; then
         export INFISICAL_TOKEN="$token"
+        if [ -z "${INFISICAL_PROJECT_ID:-}" ] && [ -n "${INFISICAL_SECRETS_PROJECT_ID:-}" ]; then
+          export INFISICAL_PROJECT_ID="$INFISICAL_SECRETS_PROJECT_ID"
+        fi
         echo "🔐 Infisical authenticated (INFISICAL_TOKEN exported)."
       fi
     fi

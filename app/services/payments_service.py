@@ -6,7 +6,7 @@ from typing import Any
 from app.core.config import settings
 from app.core.database import get_db_connection
 from app.core.errors import ConflictError, ForbiddenError, NotFoundError
-from app.core.security.fle import compute_blind_index, decrypt_field, encrypt_field
+from app.core.security.fle import compute_blind_index, get_envelope_encryptor
 from app.repositories import audit_repo, sessions_repo, settlements_repo
 from app.schemas.payments import PaymentIntentResponse, SettlementResponse
 
@@ -64,10 +64,10 @@ async def save_host_payout_upi(
     if "@" not in normalized_upi or len(normalized_upi) < 5:
         raise ConflictError("Invalid UPI ID format.")
 
-    # Encrypt using FLE with user_id bound as associated data
-    encrypted_upi = encrypt_field(
+    # Encrypt using Infisical KMS envelope encryption with user_id bound as associated data
+    encryptor = get_envelope_encryptor()
+    encrypted_upi = await encryptor.encrypt(
         plaintext=normalized_upi,
-        key=settings.fle_key,
         associated_data=user_id.encode("utf-8"),
     )
     bidx = compute_blind_index(
@@ -117,9 +117,9 @@ async def get_payment_intent(
         if not payout_profile:
             raise ConflictError("Host has not configured a payout UPI ID.")
 
-        host_vpa = decrypt_field(
+        encryptor = get_envelope_encryptor()
+        host_vpa = await encryptor.decrypt(
             payload=bytes(payout_profile["upi_id_encrypted"]),
-            key=settings.fle_key,
             associated_data=host_id.encode("utf-8"),
         )
 

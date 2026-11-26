@@ -18,14 +18,26 @@ if [[ "$CMD" == "run" || "$CMD" == "test" ]]; then
     nohup python3 "$WORKSPACE_ROOT/scripts/adb_forward_bridge.py" >/tmp/adb_forward_bridge.log 2>&1 &
   fi
 
+  INFISICAL_ENV="${INFISICAL_ENVIRONMENT:-dev}"
+  PROJECT_ID="${INFISICAL_PROJECT_ID:-${INFISICAL_SECRETS_PROJECT_ID:-}}"
+  EXPORT_FLAGS=(--env="$INFISICAL_ENV" --path=/public --format=json)
+  if [[ -n "$PROJECT_ID" ]]; then
+    EXPORT_FLAGS+=(--projectId="$PROJECT_ID")
+  fi
+  if [[ -n "${INFISICAL_SITE_URL:-}" ]]; then
+    SITE_URL="${INFISICAL_SITE_URL%/}"
+    [[ "$SITE_URL" != */api ]] && SITE_URL="${SITE_URL}/api"
+    EXPORT_FLAGS+=(--domain="$SITE_URL")
+  fi
+
   DEFINES=()
   while IFS= read -r line; do
     [[ -n "$line" ]] && DEFINES+=("$line")
   done < <(
     if command -v direnv >/dev/null 2>&1 && [[ -d "$WORKSPACE_ROOT" ]]; then
-      direnv exec "$WORKSPACE_ROOT" infisical export --path=/public --format=json 2>/dev/null | jq -r '.[] | "--dart-define=\(.key)=\(.value)"' 2>/dev/null || true
+      direnv exec "$WORKSPACE_ROOT" infisical export "${EXPORT_FLAGS[@]}" 2>/dev/null | jq -r '.[] | "--dart-define=\(.key)=\(.value)"' 2>/dev/null || true
     else
-      infisical export --path=/public --format=json 2>/dev/null | jq -r '.[] | "--dart-define=\(.key)=\(.value)"' 2>/dev/null || true
+      infisical export "${EXPORT_FLAGS[@]}" 2>/dev/null | jq -r '.[] | "--dart-define=\(.key)=\(.value)"' 2>/dev/null || true
     fi
   )
 

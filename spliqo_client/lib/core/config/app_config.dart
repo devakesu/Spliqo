@@ -7,7 +7,7 @@ class AppConfig {
     required this.appDomain,
     required this.backendUrl,
     required this.supabaseUrl,
-    required this.supabaseAnonKey,
+    required this.supabasePublishableKey,
     required this.sentryDsn,
     required this.environment,
   });
@@ -17,7 +17,7 @@ class AppConfig {
   final String appDomain;
   final String backendUrl;
   final String supabaseUrl;
-  final String supabaseAnonKey;
+  final String supabasePublishableKey;
   final String sentryDsn;
   final String environment;
 
@@ -52,8 +52,8 @@ class AppConfig {
     'SUPABASE_URL',
   );
 
-  static const String _supabaseAnonKey = String.fromEnvironment(
-    'SUPABASE_ANON_KEY',
+  static const String _supabasePublishableKey = String.fromEnvironment(
+    'SUPABASE_PUBLISHABLE_KEY',
   );
 
   static const String _sentryDsn = String.fromEnvironment(
@@ -72,7 +72,7 @@ class AppConfig {
     appDomain: _appDomain,
     backendUrl: _backendUrl,
     supabaseUrl: _supabaseUrl,
-    supabaseAnonKey: _supabaseAnonKey,
+    supabasePublishableKey: _supabasePublishableKey,
     sentryDsn: _sentryDsn,
     environment: _environment,
   );

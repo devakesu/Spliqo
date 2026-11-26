@@ -6,15 +6,21 @@ from httpx import AsyncClient
 
 from app.core.config import settings
 from app.core.database import get_db_connection
+from tests.conftest import TEST_EC_PRIVATE_KEY
 
 
 def make_auth_header(user_id: str) -> dict[str, str]:
-    """Generate a valid Supabase JWT Bearer Authorization header for test user."""
-    secret = settings.supabase_jwt_secret or "super-secret-jwt-token-with-at-least-32-characters-long"
+    """Generate a valid Supabase ECC (P-256 / ES256) JWT Bearer Authorization header."""
     token = jwt.encode(
-        {"sub": user_id, "role": "authenticated"},
-        secret,
-        algorithm="HS256",
+        {
+            "sub": user_id,
+            "role": "authenticated",
+            "aud": settings.supabase_jwt_audience,
+            "iss": settings.resolved_jwt_issuer,
+        },
+        TEST_EC_PRIVATE_KEY,
+        algorithm="ES256",
+        headers={"kid": "test-p256-key"},
     )
     return {"Authorization": f"Bearer {token}"}
 

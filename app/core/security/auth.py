@@ -1,16 +1,38 @@
 """JWT Authentication dependency for FastAPI.
 
-Extracts and validates Supabase-issued JWT tokens.
-Derives caller user ID (`sub`) securely without trusting client-supplied identifiers.
+Extracts and validates Supabase-issued asymmetric JWT tokens (ECC P-256 / ES256)
+against the project's JWKS endpoint. Derives caller user ID (`sub`) securely
+without trusting client-supplied identifiers.
 """
 
 from typing import Annotated
 
 import jwt
 from fastapi import Header
+from jwt import PyJWKClient
 
 from app.core.config import settings
 from app.core.errors import UnauthorizedError
+
+_jwk_client: PyJWKClient | None = None
+
+
+def get_jwk_client() -> PyJWKClient:
+    """Return the cached PyJWKClient configured for Supabase ECC (P-256) JWKS."""
+    global _jwk_client
+    if _jwk_client is None:
+        _jwk_client = PyJWKClient(
+            settings.resolved_jwks_url,
+            cache_keys=True,
+            lifespan=3600,
+        )
+    return _jwk_client
+
+
+def set_jwk_client(client: PyJWKClient | None) -> None:
+    """Override or reset the PyJWKClient (primarily for testing)."""
+    global _jwk_client
+    _jwk_client = client
 
 
 def get_current_user_id(
@@ -25,13 +47,13 @@ def get_current_user_id(
         raise UnauthorizedError("Empty bearer token.")
 
     try:
-        # In test/dev environment, decode with configured secret or fallback
-        secret = settings.supabase_jwt_secret or "super-secret-jwt-token-with-at-least-32-characters-long"
+        signing_key = get_jwk_client().get_signing_key_from_jwt(token)
         payload = jwt.decode(
             token,
-            secret,
-            algorithms=["HS256"],
-            options={"verify_aud": False},
+            signing_key.key,
+            algorithms=["ES256"],
+            issuer=settings.resolved_jwt_issuer,
+            audience=settings.supabase_jwt_audience,
         )
         user_id = payload.get("sub")
         if not user_id:

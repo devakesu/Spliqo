@@ -10,7 +10,7 @@ final supabaseClientProvider = Provider<SupabaseClient>((ref) {
     // If Supabase.initialize has not completed yet, construct a client instance
     final client = SupabaseClient(
       AppConfig.current.supabaseUrl,
-      AppConfig.current.supabaseAnonKey,
+      AppConfig.current.supabasePublishableKey,
       authOptions: const AuthClientOptions(autoRefreshToken: false),
     );
     ref.onDispose(client.dispose);
