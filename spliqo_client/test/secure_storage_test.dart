@@ -17,7 +17,9 @@ class FakeFlutterSecureStorage implements FlutterSecureStorage {
     AppleOptions? mOptions,
     WindowsOptions? wOptions,
   }) async {
-    if (shouldThrow) throw Exception('KeyStore unavailable');
+    if (shouldThrow) {
+      throw Exception('KeyStore unavailable');
+    }
     if (value != null) {
       _data[key] = value;
     } else {
@@ -35,7 +37,9 @@ class FakeFlutterSecureStorage implements FlutterSecureStorage {
     AppleOptions? mOptions,
     WindowsOptions? wOptions,
   }) async {
-    if (shouldThrow) throw Exception('Keychain access error');
+    if (shouldThrow) {
+      throw Exception('Keychain access error');
+    }
     return _data[key];
   }
 
@@ -49,7 +53,9 @@ class FakeFlutterSecureStorage implements FlutterSecureStorage {
     AppleOptions? mOptions,
     WindowsOptions? wOptions,
   }) async {
-    if (shouldThrow) throw Exception('KeyStore delete failure');
+    if (shouldThrow) {
+      throw Exception('KeyStore delete failure');
+    }
     _data.remove(key);
   }
 
@@ -63,7 +69,9 @@ class FakeFlutterSecureStorage implements FlutterSecureStorage {
     AppleOptions? mOptions,
     WindowsOptions? wOptions,
   }) async {
-    if (shouldThrow) throw Exception('KeyStore query failure');
+    if (shouldThrow) {
+      throw Exception('KeyStore query failure');
+    }
     return _data.containsKey(key);
   }
 
@@ -76,7 +84,9 @@ class FakeFlutterSecureStorage implements FlutterSecureStorage {
     WindowsOptions? wOptions,
     WebOptions? webOptions,
   }) async {
-    if (shouldThrow) throw Exception('KeyStore wipe failure');
+    if (shouldThrow) {
+      throw Exception('KeyStore wipe failure');
+    }
     _data.clear();
   }
 

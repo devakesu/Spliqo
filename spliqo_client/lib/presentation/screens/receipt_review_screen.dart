@@ -96,7 +96,9 @@ class _ReceiptReviewScreenState extends ConsumerState<ReceiptReviewScreen> {
     try {
       final imageFile =
           await widget.imageService.pickAndValidateReceipt(source: source);
-      if (imageFile == null) return;
+      if (imageFile == null) {
+        return;
+      }
 
       setState(() {
         _imageFile = imageFile;
@@ -183,7 +185,9 @@ class _ReceiptReviewScreenState extends ConsumerState<ReceiptReviewScreen> {
       initialItem: item,
       nextPosition: nextPos,
     );
-    if (result == null) return;
+    if (result == null) {
+      return;
+    }
 
     setState(() {
       switch (result.action) {

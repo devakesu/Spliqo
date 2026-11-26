@@ -46,7 +46,9 @@ Map<String, int> splitExact(int amount, Map<String, int> weights) {
       final remA = rem[a]!;
       final remB = rem[b]!;
       final remComp = remB.compareTo(remA); // descending rem
-      if (remComp != 0) return remComp;
+      if (remComp != 0) {
+        return remComp;
+      }
       return a.compareTo(b); // ascending key
     });
 

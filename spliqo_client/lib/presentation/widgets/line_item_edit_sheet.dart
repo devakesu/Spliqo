@@ -89,13 +89,19 @@ class _LineItemEditSheetState extends State<LineItemEditSheet> {
 
   int? _parsePaiseFromInput(String raw) {
     final clean = raw.trim().replaceAll(',', '');
-    if (clean.isEmpty) return null;
+    if (clean.isEmpty) {
+      return null;
+    }
 
     final parts = clean.split('.');
-    if (parts.length > 2) return null;
+    if (parts.length > 2) {
+      return null;
+    }
 
     final rupees = int.tryParse(parts[0]) ?? 0;
-    if (rupees < 0) return null;
+    if (rupees < 0) {
+      return null;
+    }
 
     var paise = 0;
     if (parts.length == 2) {
@@ -108,7 +114,9 @@ class _LineItemEditSheetState extends State<LineItemEditSheet> {
     }
 
     final total = (rupees * 100) + paise;
-    if (total <= 0 || total > 10000000) return null;
+    if (total <= 0 || total > 10000000) {
+      return null;
+    }
     return total;
   }
 

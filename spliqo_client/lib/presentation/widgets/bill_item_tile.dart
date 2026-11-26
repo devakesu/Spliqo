@@ -23,7 +23,9 @@ class BillItemTile extends StatelessWidget {
   final bool isFrozen;
 
   void _handleTap() {
-    if (isFrozen) return;
+    if (isFrozen) {
+      return;
+    }
     unawaited(HapticFeedbackService.selection());
     onToggleClaim();
   }

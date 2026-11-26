@@ -269,8 +269,12 @@ class TestSessionRoomNotifier extends SessionRoomNotifier {
   @override
   Future<void> toggleClaim(String itemId) async {
     final participantId = state.currentParticipantId;
-    if (participantId == null) return;
-    if (state.isSelectionCompleted) return;
+    if (participantId == null) {
+      return;
+    }
+    if (state.isSelectionCompleted) {
+      return;
+    }
 
     final isClaimed = state.isItemClaimedByMe(itemId);
     if (isClaimed) {

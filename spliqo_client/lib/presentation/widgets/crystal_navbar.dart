@@ -44,7 +44,7 @@ class CrystalNavBar extends StatelessWidget {
           horizontal: AppSpacing.md,
           vertical: AppSpacing.sm,
         ),
-        child: Container(
+        child: DecoratedBox(
           decoration: const BoxDecoration(
             borderRadius: AppRadius.roundedCrystal,
             boxShadow: AppShadows.crystalFloating,

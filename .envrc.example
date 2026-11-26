@@ -1,0 +1,123 @@
+# ============================================================================
+# Spliqo direnv Configuration (.envrc)
+# ============================================================================
+#
+# Required variables are marked with ⚠️
+# Optional variables are marked with ℹ️
+#
+# HOW DIRENV & INFISICAL UNIVERSAL AUTH WORK
+# ─────────────────────────────────────────────────────────────────────────────
+#
+#  🚀 direnv (https://direnv.net)
+#     Automatically loads and unloads environment variables when entering and
+#     leaving this project directory in your terminal or IDE shell.
+#
+#  🔐 Infisical Machine Identity (Universal Auth)
+#     Instead of storing sensitive application secrets, API keys, or database
+#     passwords on disk in plaintext `.env` files, this repository centralizes
+#     all secrets inside the Infisical Secret Manager.
+#
+#     This file configures machine identity credentials (Universal Auth).
+#     The Infisical CLI uses these credentials to authenticate non-interactively
+#     and inject runtime, build, or test secrets directly into process memory
+#     (e.g., `infisical run -- <command>`).
+#
+#  📋 QUICK START SETUP
+#  1. Copy this template to create your local .envrc:
+#        cp .envrc.example .envrc
+#
+#  2. Obtain Universal Auth Machine Identity credentials:
+#        Infisical Dashboard → Access Control / Machine Identities → Universal Auth
+#        Create or select an identity with read access to the project's secrets.
+#        Generate a Client ID and Client Secret.
+#
+#  3. Populate INFISICAL_SECRETS_UNIVERSAL_AUTH_CLIENT_ID and
+#     INFISICAL_SECRETS_UNIVERSAL_AUTH_CLIENT_SECRET below.
+#
+#  4. Allow direnv to load the file in your active shell:
+#        direnv allow
+#
+#  ⚠️ SECURITY NOTICE:
+#     - Never commit the active `.envrc` file to git (it is ignored via .gitignore).
+#     - Never put application secrets, private keys, or passwords in this file.
+#     - Only store machine identity authentication credentials here.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ============================================================================
+# 🌐 INFISICAL PROJECT & INSTANCE TARGETING (OPTIONAL)
+# ============================================================================
+
+# ℹ️ Target environment slug (e.g. dev, staging, prod)
+# Defaults to 'dev' when running local commands
+export INFISICAL_ENVIRONMENT="dev"
+
+# ℹ️ Self-hosted Infisical instance API URL (Default: https://app.infisical.com/api)
+# Uncomment and configure if your team uses a self-hosted Infisical instance
+export INFISICAL_SITE_URL="https://app.infisical.com"
+
+# ============================================================================
+# 🔑 INFISICAL SECRETS CREDENTIALS
+# ============================================================================
+
+# ⚠️ Infisical Universal Auth Client ID (Machine Identity public identifier)
+# Obtain from Infisical Dashboard → Access Control → Machine Identities → Universal Auth
+export INFISICAL_SECRETS_UNIVERSAL_AUTH_CLIENT_ID="<YOUR_CLIENT_ID>"
+
+# ⚠️ Infisical Universal Auth Client Secret (Machine Identity private token)
+# Generated alongside the Client ID; keep strictly confidential
+export INFISICAL_SECRETS_UNIVERSAL_AUTH_CLIENT_SECRET="<YOUR_CLIENT_SECRET>"
+
+# ⚠️ Infisical Project Workspace ID
+# Target a specific Infisical project without requiring a local infisical.json file
+# export INFISICAL_SECRETS_PROJECT_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# ----------------------------------------------------------------------------
+# 🔏 Infisical KMS Envelope Encryption (Zero-Trust Key Management)
+# ----------------------------------------------------------------------------
+
+# ⚠️ Infisical KMS Master Key ID (UUID of KMS Root Key used to wrap Institute TDEKs and Platform PDEK)
+INFISICAL_KMS_KEY_ID=12345678-1234-1234-1234-123456789abc
+
+# ⚠️ Infisical Universal Auth Machine Identity Credentials for KMS
+# Production: Single-use bootstrap secret (maxUses=1, ttl=10m) burned into RAM on boot
+INFISICAL_KMS_UNIVERSAL_AUTH_CLIENT_ID=
+INFISICAL_KMS_UNIVERSAL_AUTH_CLIENT_SECRET=
+
+# ⚠️ Application runtime port and environment bindings
+export PORT="8000"
+export APP_ENV="development"
+
+# ----------------------------------------------------------------------------
+# Automatic Infisical Session Authentication
+# Exchanges machine credentials for a session token whenever direnv loads .envrc
+# ----------------------------------------------------------------------------
+infisical_auth() {
+  local client_id="${INFISICAL_SECRETS_UNIVERSAL_AUTH_CLIENT_ID:-}"
+  local client_secret="${INFISICAL_SECRETS_UNIVERSAL_AUTH_CLIENT_SECRET:-}"
+  if [ -n "$client_id" ] && \
+     [ -n "$client_secret" ] && \
+     [ "$client_id" != "<YOUR_CLIENT_ID>" ] && \
+     [ "$client_secret" != "<YOUR_CLIENT_SECRET>" ]; then
+    if command -v infisical >/dev/null 2>&1; then
+      local domain_flags=()
+      if [ -n "${INFISICAL_SITE_URL:-}" ]; then
+        local site_url="${INFISICAL_SITE_URL%/}"
+        [[ "$site_url" != */api ]] && site_url="${site_url}/api"
+        domain_flags=(--domain="$site_url")
+      fi
+      local token
+      token=$(infisical login --method=universal-auth \
+        --client-id="$client_id" \
+        --client-secret="$client_secret" \
+        "${domain_flags[@]}" \
+        --plain --silent 2>/dev/null)
+      if [ -n "$token" ]; then
+        export INFISICAL_TOKEN="$token"
+        echo "🔐 Infisical authenticated (INFISICAL_TOKEN exported)."
+      fi
+    fi
+  fi
+}
+
+infisical_auth

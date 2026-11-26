@@ -35,6 +35,10 @@ build/
 .env.local
 .env.*
 *.env
+.envrc
+!.envrc.example
+!.example.env
+!.env.example
 secrets.json
 *.pem
 *.key

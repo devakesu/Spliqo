@@ -25,6 +25,7 @@ BLOCKED_DOTENV_KEYS: set[str] = {
     "database_url",
     "fle_key_hex",
     "fle_blind_index_key_hex",
+    "infisical_kms_universal_auth_client_secret",
 }
 
 
@@ -81,6 +82,11 @@ class Settings(BaseSettings):
     # --- AI & Vision Services ---
     gemini_api_key: str | None = None
     gemini_model_id: str = "gemini-2.0-flash"
+
+    # --- Infisical KMS Envelope Encryption ---
+    infisical_kms_key_id: str | None = None
+    infisical_kms_universal_auth_client_id: str | None = None
+    infisical_kms_universal_auth_client_secret: str | None = None
 
     # --- Security & Cryptographic Keys (FLE) ---
     admin_api_key: str | None = None

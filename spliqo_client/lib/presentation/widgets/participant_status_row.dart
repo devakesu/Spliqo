@@ -88,7 +88,9 @@ class ParticipantStatusRow extends StatelessWidget {
   }
 
   Widget? _buildPaymentBadge() {
-    if (settlement == null) return null;
+    if (settlement == null) {
+      return null;
+    }
 
     final payStatus = settlement!.payStatus;
     Color color;

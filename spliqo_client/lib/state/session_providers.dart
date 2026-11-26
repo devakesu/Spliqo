@@ -70,7 +70,9 @@ class SessionRoomState {
   final String? errorMessage;
 
   ParticipantModel? get currentParticipant {
-    if (currentParticipantId == null) return null;
+    if (currentParticipantId == null) {
+      return null;
+    }
     return participants.cast<ParticipantModel?>().firstWhere(
           (p) => p?.id == currentParticipantId,
           orElse: () => null,
@@ -78,7 +80,9 @@ class SessionRoomState {
   }
 
   SettlementModel? get currentSettlement {
-    if (currentParticipantId == null) return null;
+    if (currentParticipantId == null) {
+      return null;
+    }
     return settlements.cast<SettlementModel?>().firstWhere(
           (s) => s?.participantId == currentParticipantId,
           orElse: () => null,
@@ -89,7 +93,9 @@ class SessionRoomState {
   bool get isSelectionCompleted => currentParticipant?.isSelectionCompleted ?? false;
 
   bool isItemClaimedByMe(String itemId) {
-    if (currentParticipantId == null) return false;
+    if (currentParticipantId == null) {
+      return false;
+    }
     return claims.any(
       (c) => c.itemId == itemId && c.participantId == currentParticipantId,
     );
@@ -120,7 +126,9 @@ class SessionRoomState {
       }
     }
 
-    if (myItemsPaise == 0) return 0;
+    if (myItemsPaise == 0) {
+      return 0;
+    }
 
     try {
       return estimateSharePaise(
@@ -294,7 +302,9 @@ class SessionRoomNotifier extends Notifier<SessionRoomState> {
   /// On trigger or RLS rejection (e.g. locked selection), rolls back and surfaces error.
   Future<void> toggleClaim(String itemId) async {
     final participantId = state.currentParticipantId;
-    if (participantId == null) return;
+    if (participantId == null) {
+      return;
+    }
 
     if (state.isSelectionCompleted) {
       state = state.copyWith(errorMessage: 'Your selection is locked.');

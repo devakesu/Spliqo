@@ -176,7 +176,9 @@ class AuthNotifier extends Notifier<AuthState> {
   /// Sets or updates the user's table display name and persists to KeyStore.
   Future<void> updateDisplayName(String displayName) async {
     final cleanName = displayName.trim();
-    if (cleanName.isEmpty) return;
+    if (cleanName.isEmpty) {
+      return;
+    }
 
     final updatedUser = state.user?.copyWith(displayName: cleanName) ??
         UserModel(
