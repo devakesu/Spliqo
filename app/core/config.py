@@ -56,6 +56,7 @@ class Settings(BaseSettings):
     # --- Rate Limiting & Caching ---
     enable_rate_limiting: bool = True
     rate_limit_health: str = "60/minute"
+    rate_limit_profile: str = "20/minute"
     redis_url: str | None = None
 
     # --- Database Settings ---

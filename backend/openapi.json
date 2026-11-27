@@ -147,6 +147,75 @@
         }
       }
     },
+    "/v1/sessions/{session_id}/draft": {
+      "put": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "Update Draft Session",
+        "description": "Update line items and adjustments in an existing draft session before activation.",
+        "operationId": "update_draft_session_v1_sessions__session_id__draft_put",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDraftSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/sessions/{session_id}": {
       "get": {
         "tags": [
@@ -214,6 +283,124 @@
         "summary": "Activate Session",
         "description": "Host action to activate a draft session.",
         "operationId": "activate_session_v1_sessions__session_id__activate_post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sessions/{session_id}/lock": {
+      "post": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "Lock Session",
+        "description": "Host action to force lock the room and transition to reviewing phase.",
+        "operationId": "lock_session_v1_sessions__session_id__lock_post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sessions/{session_id}/reopen": {
+      "post": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "Reopen Session",
+        "description": "Host action to reopen the room before finalisation or when settlements have not started.",
+        "operationId": "reopen_session_v1_sessions__session_id__reopen_post",
         "parameters": [
           {
             "name": "session_id",
@@ -834,6 +1021,114 @@
         }
       }
     },
+    "/v1/users/me/profile": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get My Profile",
+        "description": "Fetch the authenticated user's profile.",
+        "operationId": "get_my_profile_v1_users_me_profile_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Update My Profile",
+        "description": "Create or update display_name and FLE-encrypted phone number for caller.",
+        "operationId": "update_my_profile_v1_users_me_profile_put",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/health": {
       "get": {
         "tags": [
@@ -976,6 +1271,75 @@
         }
       }
     },
+    "/api/v1/sessions/{session_id}/draft": {
+      "put": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "Update Draft Session",
+        "description": "Update line items and adjustments in an existing draft session before activation.",
+        "operationId": "update_draft_session_api_v1_sessions__session_id__draft_put",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDraftSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/sessions/{session_id}": {
       "get": {
         "tags": [
@@ -1043,6 +1407,124 @@
         "summary": "Activate Session",
         "description": "Host action to activate a draft session.",
         "operationId": "activate_session_api_v1_sessions__session_id__activate_post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{session_id}/lock": {
+      "post": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "Lock Session",
+        "description": "Host action to force lock the room and transition to reviewing phase.",
+        "operationId": "lock_session_api_v1_sessions__session_id__lock_post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{session_id}/reopen": {
+      "post": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "Reopen Session",
+        "description": "Host action to reopen the room before finalisation or when settlements have not started.",
+        "operationId": "reopen_session_api_v1_sessions__session_id__reopen_post",
         "parameters": [
           {
             "name": "session_id",
@@ -1646,6 +2128,114 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SettlementResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/me/profile": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get My Profile",
+        "description": "Fetch the authenticated user's profile.",
+        "operationId": "get_my_profile_api_v1_users_me_profile_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Update My Profile",
+        "description": "Create or update display_name and FLE-encrypted phone number for caller.",
+        "operationId": "update_my_profile_api_v1_users_me_profile_put",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileResponse"
                 }
               }
             }
@@ -2279,6 +2869,75 @@
         "title": "SettlementResponse",
         "description": "Response DTO for participant settlement state."
       },
+      "UpdateDraftSessionRequest": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "subtotal_paise": {
+            "type": "integer",
+            "maximum": 10000000.0,
+            "minimum": 1.0,
+            "title": "Subtotal Paise"
+          },
+          "tax_paise": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Tax Paise",
+            "default": 0
+          },
+          "service_charge_paise": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Service Charge Paise",
+            "default": 0
+          },
+          "discount_paise": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Discount Paise",
+            "default": 0
+          },
+          "round_off_paise": {
+            "type": "integer",
+            "title": "Round Off Paise",
+            "default": 0
+          },
+          "total_paise": {
+            "type": "integer",
+            "maximum": 10000000.0,
+            "minimum": 1.0,
+            "title": "Total Paise"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CreateDraftItemSchema"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "minItems": 1,
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "subtotal_paise",
+          "total_paise",
+          "items"
+        ],
+        "title": "UpdateDraftSessionRequest",
+        "description": "Request payload to update a draft session and its line items before activation."
+      },
       "UpdatePayPreferenceRequest": {
         "properties": {
           "preference": {
@@ -2296,6 +2955,71 @@
         ],
         "title": "UpdatePayPreferenceRequest",
         "description": "Payload to select payment preference."
+      },
+      "UpdateProfileRequest": {
+        "properties": {
+          "display_name": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Display Name"
+          },
+          "phone_number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20,
+                "minLength": 8
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone Number"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "display_name"
+        ],
+        "title": "UpdateProfileRequest",
+        "description": "Strict DTO for creating or updating the authenticated user's profile."
+      },
+      "UserProfileResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "has_phone_number": {
+            "type": "boolean",
+            "title": "Has Phone Number"
+          },
+          "masked_phone_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Masked Phone Number"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "display_name",
+          "has_phone_number"
+        ],
+        "title": "UserProfileResponse",
+        "description": "Response DTO for authenticated user profile (phone returned masked only)."
       },
       "ValidationError": {
         "properties": {

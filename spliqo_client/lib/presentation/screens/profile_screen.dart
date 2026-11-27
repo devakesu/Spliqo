@@ -1,12 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:spliqo/core/config/app_config.dart';
 import 'package:spliqo/core/constants/app_strings.dart';
 import 'package:spliqo/core/constants/app_tokens.dart';
+import 'package:spliqo/core/router/route_paths.dart';
 import 'package:spliqo/core/storage/secure_storage_service.dart';
 import 'package:spliqo/core/theme/app_colors.dart';
 import 'package:spliqo/core/theme/app_gradients.dart';
+import 'package:spliqo/core/validation/auth_validators.dart';
+import 'package:spliqo/state/auth_provider.dart';
 import 'package:spliqo/state/session_providers.dart';
 
 /// Screen allowing the host to manage their payout UPI ID and security settings.
@@ -81,10 +85,89 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
+  Future<void> _promptVerifyPhone() async {
+    final controller = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetCtx) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.sm,
+          AppSpacing.lg,
+          MediaQuery.viewInsetsOf(sheetCtx).bottom + AppSpacing.lg,
+        ),
+        child: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Verify phone number',
+                style: Theme.of(sheetCtx).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'We will send a 6-digit SMS code and store your number encrypted via KMS.',
+                style: Theme.of(sheetCtx).textTheme.bodySmall,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              TextFormField(
+                controller: controller,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'Phone number',
+                  hintText: '+91 98765 43210',
+                  prefixIcon: Icon(Icons.phone_android_rounded),
+                ),
+                validator: AuthValidators.validatePhone,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              ElevatedButton(
+                onPressed: () {
+                  if (formKey.currentState?.validate() ?? false) {
+                    Navigator.of(sheetCtx).pop(true);
+                  }
+                },
+                child: const Text('Send SMS Code'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final phone = controller.text;
+    controller.dispose();
+
+    if (confirmed == true && mounted) {
+      final sent = await ref
+          .read(authNotifierProvider.notifier)
+          .requestPhoneVerification(phone: phone);
+      if (sent && mounted) {
+        unawaited(context.push(AppRoutes.verifyOtp));
+      } else if (mounted) {
+        final err = ref.read(authNotifierProvider).errorMessage;
+        if (err != null) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(err)));
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final authState = ref.watch(authNotifierProvider);
+    final user = authState.user;
 
     return Scaffold(
       appBar: AppBar(
@@ -109,9 +192,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       boxShadow: AppShadows.primaryGlow,
                     ),
                     child: const Center(
-                      child: Text(
-                        '👤',
-                        style: TextStyle(fontSize: 40),
+                      child: Icon(
+                        Icons.person_rounded,
+                        color: Colors.white,
+                        size: 40,
                       ),
                     ),
                   ),
@@ -136,11 +220,61 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Host Coordinator',
+              (user?.displayName.isNotEmpty ?? false)
+                  ? user!.displayName
+                  : 'Spliqo Member',
               textAlign: TextAlign.center,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
+            ),
+            if (user?.email != null && user!.email!.isNotEmpty) ...[
+              const SizedBox(height: 2),
+              Text(
+                user.email!,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondaryLight,
+                ),
+              ),
+            ],
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.xs,
+              children: [
+                if (user?.emailVerified ?? false)
+                  const Chip(
+                    avatar: Icon(
+                      Icons.verified_rounded,
+                      size: 16,
+                      color: AppColors.mintFresh,
+                    ),
+                    label: Text('Email Verified'),
+                  ),
+                if (user?.phoneVerified ?? false)
+                  Chip(
+                    avatar: const Icon(
+                      Icons.phone_android_rounded,
+                      size: 16,
+                      color: AppColors.mintFresh,
+                    ),
+                    label: Text(user?.maskedPhone ?? 'Phone Verified'),
+                  )
+                else
+                  ActionChip(
+                    avatar: const Icon(
+                      Icons.add_call,
+                      size: 16,
+                      color: AppColors.radiantViolet,
+                    ),
+                    label: const Text('Verify Phone'),
+                    onPressed: _promptVerifyPhone,
+                  ),
+              ],
             ),
             const SizedBox(height: AppSpacing.lg),
 
@@ -248,7 +382,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   : const Text(AppStrings.saveUpiCTA),
             ),
 
-            const SizedBox(height: AppSpacing.xxl),
+            const SizedBox(height: AppSpacing.xl),
+
+            OutlinedButton.icon(
+              onPressed: () async {
+                await ref.read(authNotifierProvider.notifier).signOut();
+              },
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.errorRed,
+                side: BorderSide(
+                  color: AppColors.errorRed.withValues(alpha: 0.5),
+                  width: 1.5,
+                ),
+              ),
+              icon: const Icon(Icons.logout_rounded, size: 18),
+              label: const Text('Sign out'),
+            ),
+
+            const SizedBox(height: AppSpacing.lg),
 
             // App Version Info
             Center(
@@ -261,6 +412,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 100),
           ],
         ),
       ),

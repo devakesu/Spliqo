@@ -8,6 +8,8 @@ class AppConfig {
     required this.backendUrl,
     required this.supabaseUrl,
     required this.supabasePublishableKey,
+    required this.googleWebClientId,
+    required this.googleIosClientId,
     required this.sentryDsn,
     required this.environment,
   });
@@ -18,6 +20,8 @@ class AppConfig {
   final String backendUrl;
   final String supabaseUrl;
   final String supabasePublishableKey;
+  final String googleWebClientId;
+  final String googleIosClientId;
   final String sentryDsn;
   final String environment;
 
@@ -56,6 +60,14 @@ class AppConfig {
     'SUPABASE_PUBLISHABLE_KEY',
   );
 
+  static const String _googleWebClientId = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+  );
+
+  static const String _googleIosClientId = String.fromEnvironment(
+    'GOOGLE_IOS_CLIENT_ID',
+  );
+
   static const String _sentryDsn = String.fromEnvironment(
     'SENTRY_DSN',
   );
@@ -73,6 +85,8 @@ class AppConfig {
     backendUrl: _backendUrl,
     supabaseUrl: _supabaseUrl,
     supabasePublishableKey: _supabasePublishableKey,
+    googleWebClientId: _googleWebClientId,
+    googleIosClientId: _googleIosClientId,
     sentryDsn: _sentryDsn,
     environment: _environment,
   );

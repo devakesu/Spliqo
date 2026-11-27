@@ -31,18 +31,15 @@ class HomeScreen extends StatelessWidget {
               title: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: const BoxDecoration(
-                      gradient: AppGradients.primaryRadiance,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.pie_chart_rounded,
-                        color: Colors.white,
-                        size: 18,
+                  Hero(
+                    tag: 'spliqo-brand-logo',
+                    child: ClipRRect(
+                      borderRadius: AppRadius.roundedSm,
+                      child: Image.asset(
+                        'assets/images/spliqo_logo.png',
+                        width: 32,
+                        height: 32,
+                        fit: BoxFit.cover,
                       ),
                     ),
                   ),

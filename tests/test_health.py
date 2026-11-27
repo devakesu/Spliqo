@@ -61,3 +61,23 @@ async def test_request_size_limit_rejection(async_client: AsyncClient) -> None:
     assert response.status_code == 413
     assert "Payload too large" in response.json()["detail"]
 
+
+@pytest.mark.asyncio
+async def test_favicon_and_web_icons_served(async_client: AsyncClient) -> None:
+    """Verifies that favicon and static web icon routes return 200 with cache headers."""
+    routes = [
+        ("/favicon.ico", "image/x-icon"),
+        ("/favicon-16x16.png", "image/png"),
+        ("/favicon-32x32.png", "image/png"),
+        ("/apple-touch-icon.png", "image/png"),
+        ("/site.webmanifest", "application/manifest+json"),
+        ("/static/icon-192.png", "image/png"),
+        ("/static/icon-512.png", "image/png"),
+    ]
+    for path, expected_type in routes:
+        response = await async_client.get(path)
+        assert response.status_code == 200, f"Expected 200 for {path}"
+        assert expected_type in response.headers.get("content-type", "")
+        assert "public" in response.headers.get("cache-control", "")
+        assert response.headers.get("cross-origin-resource-policy") == "cross-origin"
+

@@ -3,13 +3,15 @@
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from starlette.responses import Response
@@ -128,6 +130,48 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler) 
 # Mount API Routers
 app.include_router(api_v1_router, prefix="/v1")
 app.include_router(api_v1_router, prefix="/api/v1")
+
+_STATIC_DIR = Path(__file__).resolve().parent / "static"
+if _STATIC_DIR.is_dir():
+    app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
+
+
+def _static_file_response(filename: str, media_type: str) -> Response:
+    """Return a static asset FileResponse if present, else 404 JSON."""
+    file_path = _STATIC_DIR / filename
+    if not file_path.is_file():
+        return JSONResponse(status_code=404, content={"detail": "Not found"})
+    return FileResponse(path=str(file_path), media_type=media_type)
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon() -> Response:
+    """Serve the multi-resolution Spliqo favicon."""
+    return _static_file_response("favicon.ico", "image/x-icon")
+
+
+@app.get("/favicon-16x16.png", include_in_schema=False)
+async def favicon_16() -> Response:
+    """Serve the 16x16 PNG favicon."""
+    return _static_file_response("favicon-16x16.png", "image/png")
+
+
+@app.get("/favicon-32x32.png", include_in_schema=False)
+async def favicon_32() -> Response:
+    """Serve the 32x32 PNG favicon."""
+    return _static_file_response("favicon-32x32.png", "image/png")
+
+
+@app.get("/apple-touch-icon.png", include_in_schema=False)
+async def apple_touch_icon() -> Response:
+    """Serve the 180x180 Apple touch icon."""
+    return _static_file_response("apple-touch-icon.png", "image/png")
+
+
+@app.get("/site.webmanifest", include_in_schema=False)
+async def webmanifest() -> Response:
+    """Serve the web app manifest."""
+    return _static_file_response("site.webmanifest", "application/manifest+json")
 
 
 @app.get(

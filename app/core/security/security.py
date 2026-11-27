@@ -47,6 +47,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
     STATIC_ROUTES: ClassVar[set[str]] = {
         "/favicon.ico",
+        "/favicon-16x16.png",
+        "/favicon-32x32.png",
+        "/apple-touch-icon.png",
+        "/site.webmanifest",
         "/robots.txt",
         "/sitemap.xml",
     }

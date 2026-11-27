@@ -1,5 +1,11 @@
 /// Centralized route paths for Spliqo navigation.
 abstract final class AppRoutes {
+  // Launch & Auth
+  static const String splash = '/splash';
+  static const String login = '/login';
+  static const String signup = '/signup';
+  static const String verifyOtp = '/verify-otp';
+
   // Root Tabs
   static const String home = '/';
   static const String create = '/create';

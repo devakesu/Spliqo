@@ -78,4 +78,23 @@ abstract final class AppStrings {
   static const String upiFallbackMessage =
       'No installed UPI app could open this payment intent. You can copy the payment URI string below to pay via your bank app:';
   static const String copyIntentCTA = 'Copy Intent';
+
+  // Authentication & Onboarding
+  static const String loginTitle = 'Welcome back';
+  static const String loginSubtitle =
+      'Sign in to split restaurant bills fairly with your table.';
+  static const String signupTitle = 'Create account';
+  static const String signupSubtitle =
+      'Join Spliqo to host receipts, claim items, and settle via UPI.';
+  static const String continueWithGoogle = 'Continue with Google';
+  static const String signUpWithGoogle = 'Sign up with Google';
+  static const String verifyOtpTitle = 'Verify your code';
+  static const String verifyEmailOtpSubtitle =
+      'Enter the 6-digit verification code sent to';
+  static const String verifyPhoneOtpSubtitle =
+      'Enter the 6-digit SMS code sent to';
+  static const String privacyClaimsNotice =
+      'Item claims and your display name are visible to session members to enable shared splits. Your phone number is encrypted at rest.';
+  static const String rateLimitNotice =
+      'Too many attempts. Please wait a moment before trying again.';
 }

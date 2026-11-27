@@ -1,1 +1,4 @@
 #include "Generated.xcconfig"
+GOOGLE_IOS_CLIENT_ID = YOUR_IOS_CLIENT_ID.apps.googleusercontent.com
+GOOGLE_WEB_CLIENT_ID = YOUR_WEB_CLIENT_ID.apps.googleusercontent.com
+GOOGLE_IOS_REVERSED_CLIENT_ID = com.googleusercontent.apps.YOUR_IOS_CLIENT_ID
